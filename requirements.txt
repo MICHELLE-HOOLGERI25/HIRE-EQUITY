@@ -1,0 +1,11 @@
+streamlit
+groq
+plotly
+reportlab
+python-dotenv
+tornado
+sentence-transformers
+transformers
+torch
+accelerate
+scikit-learn

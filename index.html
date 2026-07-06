@@ -1,0 +1,2747 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HireEquity Enterprise — AI Bias Auditor & JD Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              orange: '#FF7A00',
+              purple: '#8B5CF6',
+              darkBg: 'var(--bg-tertiary)',
+              cardBg: 'var(--bg-card)',
+              border: 'var(--border-color)',
+              highlightRed: 'var(--highlight-critical)',
+              highlightYellow: 'var(--highlight-moderate)',
+              highlightBlue: 'var(--highlight-minor)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-primary: #060913;
+      --bg-secondary: #0B0F19;
+      --bg-tertiary: #0F172A;
+      --bg-card: rgba(15, 23, 42, 0.45);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --input-bg: #090D1A;
+      --input-border: rgba(255, 255, 255, 0.08);
+      --sidebar-bg: #0B0F19;
+      --header-bg: rgba(11, 15, 25, 0.8);
+      --highlight-critical: rgba(239, 68, 68, 0.15);
+      --highlight-moderate: rgba(245, 158, 11, 0.15);
+      --highlight-minor: rgba(59, 130, 246, 0.15);
+      --card-hover-border: rgba(255, 122, 0, 0.3);
+      --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      --card-hover-shadow: 0 12px 40px 0 rgba(255, 122, 0, 0.08), 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+    
+    html:not(.dark) {
+      --bg-primary: #F8FAFC;
+      --bg-secondary: #FFFFFF;
+      --bg-tertiary: #F1F5F9;
+      --bg-card: rgba(255, 255, 255, 0.7);
+      --border-color: rgba(0, 0, 0, 0.08);
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --input-bg: #FFFFFF;
+      --input-border: #CBD5E1;
+      --sidebar-bg: #FFFFFF;
+      --header-bg: rgba(255, 255, 255, 0.85);
+      --highlight-critical: rgba(239, 68, 68, 0.1);
+      --highlight-moderate: rgba(245, 158, 11, 0.1);
+      --highlight-minor: rgba(59, 130, 246, 0.1);
+      --card-hover-border: rgba(255, 122, 0, 0.4);
+      --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+      --card-hover-shadow: 0 12px 40px 0 rgba(255, 122, 0, 0.1), 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      background-image: 
+        radial-gradient(circle at top right, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at bottom left, rgba(255, 122, 0, 0.08) 0%, transparent 35%);
+      color: var(--text-primary);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-card-hover:hover {
+      transform: translateY(-2px);
+      border-color: var(--card-hover-border);
+      box-shadow: var(--card-hover-shadow);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 122, 0, 0.3);
+    }
+
+    /* Text highlight animations */
+    .bias-highlight {
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .bias-highlight:hover {
+      filter: brightness(1.2);
+      transform: scale(1.02);
+    }
+    
+    /* Notification Toast */
+    .toast {
+      animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(100%) scale(0.9); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* Light Mode CSS Cascading Overrides */
+    html:not(.dark) body {
+      background-image: 
+        radial-gradient(circle at top right, rgba(139, 92, 246, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at bottom left, rgba(255, 122, 0, 0.03) 0%, transparent 35%);
+    }
+    html:not(.dark) aside {
+      background-color: var(--sidebar-bg) !important;
+      border-right-color: var(--border-color) !important;
+    }
+    html:not(.dark) header {
+      background-color: var(--header-bg) !important;
+      border-bottom-color: var(--border-color) !important;
+    }
+    html:not(.dark) .bg-slate-900 {
+      background-color: var(--bg-tertiary) !important;
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) .bg-slate-900\/60 {
+      background-color: rgba(241, 245, 249, 0.6) !important;
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) .bg-slate-950 {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) .bg-\[\#0B0F19\] {
+      background-color: var(--bg-secondary) !important;
+    }
+    html:not(.dark) .bg-\[\#0B0F19\]\/80 {
+      background-color: var(--header-bg) !important;
+    }
+    html:not(.dark) .text-white {
+      color: var(--text-primary) !important;
+    }
+    html:not(.dark) .text-slate-100 {
+      color: var(--text-primary) !important;
+    }
+    html:not(.dark) .text-slate-200 {
+      color: var(--text-primary) !important;
+    }
+    html:not(.dark) .text-slate-300 {
+      color: var(--text-secondary) !important;
+    }
+    html:not(.dark) .text-slate-400 {
+      color: var(--text-muted) !important;
+    }
+    html:not(.dark) .text-slate-500 {
+      color: #94A3B8 !important;
+    }
+    html:not(.dark) .border-brand-border {
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) .border-brand-border\/60 {
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) .border-brand-border\/40 {
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) input, html:not(.dark) select, html:not(.dark) textarea {
+      background-color: var(--bg-secondary) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--input-border) !important;
+    }
+    html:not(.dark) input:focus, html:not(.dark) select:focus, html:not(.dark) textarea:focus {
+      border-color: #FF7A00 !important;
+      box-shadow: 0 0 0 1px rgba(255, 122, 0, 0.3) !important;
+    }
+    html:not(.dark) input::placeholder, html:not(.dark) textarea::placeholder {
+      color: #94A3B8 !important;
+    }
+    html:not(.dark) .bg-slate-850 {
+      background-color: var(--bg-tertiary) !important;
+      color: var(--text-secondary) !important;
+      border-color: var(--border-color) !important;
+    }
+    html:not(.dark) #studio-editor {
+      color: var(--text-primary) !important;
+    }
+    html:not(.dark) .sidebar-link.active-tab {
+      background-color: rgba(255, 122, 0, 0.1) !important;
+      color: #FF7A00 !important;
+    }
+    html:not(.dark) .sidebar-link:not(.active-tab) {
+      color: var(--text-secondary) !important;
+    }
+    html:not(.dark) .sidebar-link:not(.active-tab):hover {
+      background-color: var(--bg-tertiary) !important;
+      color: var(--text-primary) !important;
+    }
+    html:not(.dark) td {
+      color: var(--text-secondary) !important;
+    }
+    html:not(.dark) th {
+      color: var(--text-primary) !important;
+      border-bottom-color: var(--border-color) !important;
+    }
+    html:not(.dark) tr:hover {
+      background-color: rgba(0, 0, 0, 0.02) !important;
+    }
+
+    /* Accessibility visible focus states */
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid #FF7A00 !important;
+      outline-offset: 2px !important;
+    }
+
+    /* Interactive hover states */
+    .quick-action-btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .quick-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden font-sans select-none antialiased">
+
+  <!-- LEFT STICKY NAVIGATION SIDEBAR -->
+  <aside class="fixed inset-y-0 left-0 w-64 border-r border-brand-border bg-[#0B0F19] flex flex-col justify-between shrink-0 z-30 -translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out">
+    <div>
+      <!-- Brand Header -->
+      <div class="p-6 border-b border-brand-border flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-brand-orange to-brand-purple flex items-center justify-center shadow-lg shadow-brand-orange/20">
+          <i data-lucide="scale" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-brand-orange to-brand-purple bg-clip-text text-transparent">
+            HireEquity
+          </h1>
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block -mt-1">
+            Enterprise SaaS
+          </span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-4 space-y-1.5">
+        <button onclick="switchTab('dashboard')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group active-tab" data-tab="dashboard">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Dashboard</span>
+        </button>
+        
+        <button onclick="switchTab('studio')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="studio">
+          <i data-lucide="file-edit" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>AI JD Studio</span>
+        </button>
+        
+        <button onclick="switchTab('audit')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="audit">
+          <i data-lucide="shield-alert" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Bias Audit</span>
+        </button>
+        
+        <button onclick="switchTab('rewrite')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="rewrite">
+          <i data-lucide="wand2" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>AI Rewrite</span>
+        </button>
+        
+        <button onclick="switchTab('analytics')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="analytics">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Analytics</span>
+        </button>
+        
+        <button onclick="switchTab('simulator')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="simulator">
+          <i data-lucide="user-check" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Candidate Sim</span>
+        </button>
+        
+        <button onclick="switchTab('reports')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="reports">
+          <i data-lucide="file-text" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Reports & Export</span>
+        </button>
+        
+        <button onclick="switchTab('settings')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="settings">
+          <i data-lucide="settings" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Settings</span>
+        </button>
+
+        <button onclick="switchTab('team')" class="sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group" data-tab="team">
+          <i data-lucide="users" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+          <span>Team Management</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar footer info -->
+    <div class="p-4 border-t border-brand-border space-y-3">
+      <!-- Connection Status indicator -->
+      <div class="flex items-center gap-2 px-2.5 py-2 bg-slate-900/60 rounded-lg border border-brand-border">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" id="engine-ping"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2" id="engine-dot"></span>
+        </span>
+        <span class="text-xs font-semibold text-slate-300" id="engine-text">Connecting...</span>
+      </div>
+      <!-- User profile info -->
+      <div class="flex items-center gap-3 px-2">
+        <div class="h-8 w-8 rounded-full bg-slate-700 border border-brand-border flex items-center justify-center font-bold text-xs text-white">
+          JD
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold truncate">Jane Doe</p>
+          <p class="text-[10px] text-slate-500 font-medium truncate">Auditor — Enterprise</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+    <!-- Top sticky navbar -->
+    <header class="h-16 border-b border-brand-border bg-[#0B0F19]/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-20">
+      <div class="flex items-center gap-4">
+        <!-- Mobile Menu Toggle -->
+        <button onclick="toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-white md:hidden transition-all" id="sidebar-toggle" aria-label="Toggle Navigation Menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <div class="text-sm font-medium text-slate-400 flex items-center gap-2">
+          <span>Enterprise Console</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          <span class="text-white font-semibold" id="navbar-title">Dashboard</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Floating active document info if there is one -->
+        <div id="active-jd-badge" class="hidden text-xs bg-slate-900 border border-brand-border py-1.5 px-3 rounded-full flex items-center gap-2">
+          <i data-lucide="file" class="w-3.5 h-3.5 text-brand-orange"></i>
+          <span class="font-medium text-slate-300 truncate max-w-[150px]" id="active-jd-title">Custom Pasted Role</span>
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        </div>
+        
+        <button onclick="switchTab('studio')" class="h-9 px-4 rounded-lg bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold text-sm shadow-md transition-all flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>New Audit</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB SCREEN CONTAINER -->
+    <div class="flex-1 overflow-y-auto p-8 pb-16 relative" id="tab-container">
+
+      <!-- ==================== 🏠 DASHBOARD TAB ==================== -->
+      <section id="tab-dashboard" class="tab-content space-y-6">
+        <!-- Welcome Banner -->
+        <div class="p-8 rounded-2xl glass-card relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900">
+          <div class="absolute right-0 top-0 h-full w-1/3 bg-radial-gradient from-brand-purple/20 to-transparent pointer-events-none"></div>
+          <div class="max-w-2xl relative z-10 space-y-2">
+            <span class="text-xs font-bold text-brand-orange uppercase tracking-wider">Enterprise Intelligence</span>
+            <h2 class="text-2xl font-extrabold text-white sm:text-3xl">Optimize JDs for Inclusivity</h2>
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+              Analyze, rewrite, and benchmark your job descriptions using state-of-the-art academic wordlists and LLM intelligence to attract a broader, more diverse talent pool.
+            </p>
+            <div class="pt-4 flex flex-wrap gap-3">
+              <button onclick="switchTab('studio')" class="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm font-semibold transition-all">
+                Create with Copilot
+              </button>
+              <button onclick="triggerPasteSelector()" class="px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg text-sm font-bold shadow-md shadow-brand-orange/10 transition-all">
+                Audit Existing JD
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="p-5 rounded-xl glass-card glass-card-hover flex items-center justify-between">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Audited</p>
+              <h3 class="text-3xl font-extrabold tracking-tight text-white" id="stat-audited">12</h3>
+              <p class="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
+                <i data-lucide="trending-up" class="w-3 h-3"></i>
+                <span>+2.4% MoM</span>
+              </p>
+            </div>
+            <div class="h-12 w-12 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
+              <i data-lucide="file-check-2" class="w-6 h-6"></i>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-xl glass-card glass-card-hover flex items-center justify-between">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Inclusivity</p>
+              <h3 class="text-3xl font-extrabold tracking-tight text-white" id="stat-score">86.4</h3>
+              <p class="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
+                <i data-lucide="trending-up" class="w-3 h-3"></i>
+                <span>+4.2% increase</span>
+              </p>
+            </div>
+            <div class="h-12 w-12 rounded-lg bg-brand-orange/10 border border-brand-orange/20 flex items-center justify-center text-brand-orange shadow-inner">
+              <i data-lucide="gauge" class="w-6 h-6"></i>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-xl glass-card glass-card-hover flex items-center justify-between">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Biases Flagged</p>
+              <h3 class="text-3xl font-extrabold tracking-tight text-white" id="stat-flags">37</h3>
+              <p class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                <i data-lucide="activity" class="w-3 h-3"></i>
+                <span>Average 3 per JD</span>
+              </p>
+            </div>
+            <div class="h-12 w-12 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-inner">
+              <i data-lucide="shield-alert" class="w-6 h-6"></i>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-xl glass-card glass-card-hover flex items-center justify-between">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Diversity Boost</p>
+              <h3 class="text-3xl font-extrabold tracking-tight text-white" id="stat-boost">+24%</h3>
+              <p class="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
+                <i data-lucide="trending-up" class="w-3 h-3"></i>
+                <span>Female appeal delta</span>
+              </p>
+            </div>
+            <div class="h-12 w-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-inner">
+              <i data-lucide="sparkles" class="w-6 h-6"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle widgets grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Recent Audits Table -->
+          <div class="lg:col-span-2 p-6 rounded-xl glass-card flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between border-b border-brand-border pb-3">
+                <h4 class="text-base font-bold text-white">Recent Audit History</h4>
+                <span class="text-xs text-slate-400">Total 12 audits</span>
+              </div>
+              
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr class="text-slate-400 border-b border-brand-border">
+                      <th class="py-2.5 font-semibold text-xs uppercase tracking-wider">Role Title</th>
+                      <th class="py-2.5 font-semibold text-xs uppercase tracking-wider">Domain</th>
+                      <th class="py-2.5 font-semibold text-xs uppercase tracking-wider">Initial Score</th>
+                      <th class="py-2.5 font-semibold text-xs uppercase tracking-wider">Optimized</th>
+                      <th class="py-2.5 font-semibold text-xs uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-brand-border/40" id="dashboard-recent-audits">
+                    <!-- Loaded dynamically in JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity Timeline and Quick Actions -->
+          <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-base font-bold text-white border-b border-brand-border pb-3">Quick Actions</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <button onclick="switchTab('studio')" class="p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border hover:border-brand-orange/40 rounded-lg flex flex-col gap-2 transition-all">
+                  <i data-lucide="file-plus" class="w-5 h-5 text-brand-orange"></i>
+                  <span class="text-xs font-bold text-white text-left">Generate JD</span>
+                </button>
+                <button onclick="switchTab('analytics')" class="p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border hover:border-brand-purple/40 rounded-lg flex flex-col gap-2 transition-all">
+                  <i data-lucide="line-chart" class="w-5 h-5 text-brand-purple"></i>
+                  <span class="text-xs font-bold text-white text-left">Analytics</span>
+                </button>
+                <button onclick="switchTab('simulator')" class="p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border hover:border-indigo-500/40 rounded-lg flex flex-col gap-2 transition-all">
+                  <i data-lucide="user-check" class="w-5 h-5 text-indigo-400"></i>
+                  <span class="text-xs font-bold text-white text-left">Simulate</span>
+                </button>
+                <button onclick="switchTab('reports')" class="p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border hover:border-rose-400/40 rounded-lg flex flex-col gap-2 transition-all">
+                  <i data-lucide="download" class="w-5 h-5 text-rose-400"></i>
+                  <span class="text-xs font-bold text-white text-left">Download PDF</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-base font-bold text-white border-b border-brand-border pb-3">Audit Timeline</h4>
+              <div class="relative pl-4 border-l border-brand-border space-y-4 text-xs">
+                <div class="relative">
+                  <span class="absolute -left-[20px] top-1 h-2.5 w-2.5 rounded-full bg-brand-orange ring-4 ring-slate-950"></span>
+                  <p class="font-semibold text-slate-200">Sarah Taylor audited JD</p>
+                  <p class="text-[10px] text-slate-500">"Backend Developer" — 10 mins ago</p>
+                </div>
+                <div class="relative">
+                  <span class="absolute -left-[20px] top-1 h-2.5 w-2.5 rounded-full bg-brand-purple ring-4 ring-slate-950"></span>
+                  <p class="font-semibold text-slate-200">AI optimized description</p>
+                  <p class="text-[10px] text-slate-500">"Marketing Lead" — 1 hour ago</p>
+                </div>
+                <div class="relative">
+                  <span class="absolute -left-[20px] top-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-slate-950"></span>
+                  <p class="font-semibold text-slate-200">PDF Audit Report downloaded</p>
+                  <p class="text-[10px] text-slate-500">"Product Manager" — 2 hours ago</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ✨ AI JD STUDIO TAB ==================== -->
+      <section id="tab-studio" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          
+          <!-- Editor Form Control (Left Panel) -->
+          <div class="p-6 rounded-xl glass-card space-y-5 lg:col-span-1">
+            <h3 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-brand-orange"></i>
+              <span>Role Parameters</span>
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Job Title</label>
+                <input type="text" id="studio-role" placeholder="e.g. Senior Backend Engineer" class="w-full bg-slate-950 border border-brand-border focus:border-brand-orange/60 rounded-lg p-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-brand-orange/30">
+              </div>
+              
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Seniority Level</label>
+                <select id="studio-level" class="w-full bg-slate-950 border border-brand-border focus:border-brand-orange/60 rounded-lg p-2.5 text-sm font-semibold text-white focus:outline-none">
+                  <option value="Junior">Junior</option>
+                  <option value="Mid" selected>Mid-Level</option>
+                  <option value="Senior">Senior</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Industry Domain</label>
+                <select id="studio-domain" class="w-full bg-slate-950 border border-brand-border focus:border-brand-orange/60 rounded-lg p-2.5 text-sm font-semibold text-white focus:outline-none">
+                  <option value="Tech">Technology</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Marketing">Marketing / Sales</option>
+                  <option value="Other">Other / General</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Guideline Prompts</label>
+                <textarea id="studio-guidelines" placeholder="Add specific guidance or leave blank for default..." rows="3" class="w-full bg-slate-950 border border-brand-border focus:border-brand-orange/60 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-brand-orange/30"></textarea>
+              </div>
+              
+              <button onclick="generateJd()" class="w-full py-3 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span>Generate JD</span>
+              </button>
+
+              <button onclick="triggerPasteMode()" class="w-full py-2.5 bg-slate-900 border border-brand-border hover:bg-slate-800 text-slate-300 font-semibold rounded-lg text-sm transition-all flex items-center justify-center gap-2">
+                <i data-lucide="clipboard" class="w-4 h-4"></i>
+                <span>Paste Existing draft</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Document Editor (Center Panel) -->
+          <div class="lg:col-span-2 flex flex-col gap-4">
+            <div class="p-6 rounded-xl glass-card flex-1 flex flex-col min-h-[480px]">
+              <!-- Editor Menu -->
+              <div class="flex items-center justify-between border-b border-brand-border pb-3 mb-4">
+                <div class="flex items-center gap-1 bg-slate-950/60 p-1 rounded-lg border border-brand-border">
+                  <button onclick="document.execCommand('bold',false,null)" title="Bold" class="p-1.5 hover:bg-white/5 text-slate-400 hover:text-white rounded transition-all">
+                    <i data-lucide="bold" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="document.execCommand('italic',false,null)" title="Italic" class="p-1.5 hover:bg-white/5 text-slate-400 hover:text-white rounded transition-all">
+                    <i data-lucide="italic" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="document.execCommand('insertUnorderedList',false,null)" title="Bullet List" class="p-1.5 hover:bg-white/5 text-slate-400 hover:text-white rounded transition-all">
+                    <i data-lucide="list" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="clearEditorFormatting()" title="Clean Formatting" class="p-1.5 hover:bg-white/5 text-slate-400 hover:text-white rounded transition-all">
+                    <i data-lucide="remove-formatting" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                
+                <!-- Autosave State Indicator -->
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-1 px-3 rounded-full">
+                  <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Live Sandbox Ready</span>
+                </div>
+              </div>
+
+              <!-- Editor Workspace -->
+              <div id="studio-editor" contenteditable="true" oninput="updateLiveStats()" class="flex-1 w-full min-h-[350px] font-sans text-slate-200 leading-relaxed text-sm bg-transparent border-none focus:outline-none overflow-y-auto whitespace-pre-wrap">Generate or paste a job description here to audit...</div>
+              
+              <!-- Editor live metrics footer -->
+              <div class="grid grid-cols-4 gap-4 border-t border-brand-border/60 pt-4 mt-4 text-center text-xs text-slate-400">
+                <div>
+                  <p class="font-bold text-slate-200" id="live-words">0</p>
+                  <p class="text-[10px] uppercase tracking-wider">Words</p>
+                </div>
+                <div>
+                  <p class="font-bold text-slate-200" id="live-chars">0</p>
+                  <p class="text-[10px] uppercase tracking-wider">Characters</p>
+                </div>
+                <div>
+                  <p class="font-bold text-slate-200" id="live-readability">Grade 10</p>
+                  <p class="text-[10px] uppercase tracking-wider">Reading Grade</p>
+                </div>
+                <div>
+                  <p class="font-bold text-slate-200" id="live-time">0 min</p>
+                  <p class="text-[10px] uppercase tracking-wider">Reading Time</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex justify-end gap-3">
+              <button onclick="runAudit()" class="px-6 py-3 bg-gradient-to-tr from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>Scan for Bias</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Studio Sidebar (Right Panel) -->
+          <div class="lg:col-span-1 space-y-6">
+            <!-- Copilot Suggestions -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+                <i data-lucide="bot" class="w-4 h-4 text-brand-purple"></i>
+                <span>AI Copilot Suggestions</span>
+              </h4>
+              <div class="space-y-2 text-xs">
+                <button onclick="applyCopilotSuggestion('Ensure age-neutral guidelines')" class="w-full p-2.5 bg-slate-900 border border-brand-border hover:border-brand-orange/40 rounded-lg text-left text-slate-300 hover:text-white transition-all">
+                  ⚡ "Focus on competencies rather than years of experience"
+                </button>
+                <button onclick="applyCopilotSuggestion('Make it collaborative')" class="w-full p-2.5 bg-slate-900 border border-brand-border hover:border-brand-orange/40 rounded-lg text-left text-slate-300 hover:text-white transition-all">
+                  ⚡ "Soften the requirements wording to encourage more women applicants"
+                </button>
+                <button onclick="applyCopilotSuggestion('Replace rockstar terminology')" class="w-full p-2.5 bg-slate-900 border border-brand-border hover:border-brand-orange/40 rounded-lg text-left text-slate-300 hover:text-white transition-all">
+                  ⚡ "Avoid competitive buzzwords like 'rockstar' or 'ninja'"
+                </button>
+              </div>
+            </div>
+
+            <!-- Version History -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+                <i data-lucide="history" class="w-4 h-4 text-slate-400"></i>
+                <span>Version History</span>
+              </h4>
+              <div class="space-y-2.5 text-xs text-slate-400" id="studio-version-list">
+                <div class="text-center py-4">
+                  No previous versions saved yet.
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- ==================== 🔍 BIAS AUDIT TAB ==================== -->
+      <section id="tab-audit" class="tab-content hidden space-y-6">
+        <!-- Main audit display grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Left side: highlighted text view -->
+          <div class="lg:col-span-2 flex flex-col gap-6">
+            <div class="p-6 rounded-xl glass-card flex-1 flex flex-col min-h-[480px]">
+              <div class="flex items-center justify-between border-b border-brand-border pb-3 mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="highlighter" class="w-4 h-4 text-brand-orange"></i>
+                  <span>In-Context Bias Heatmap</span>
+                </h3>
+                <div class="flex gap-4 text-xs font-semibold text-slate-400">
+                  <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Critical</span>
+                  <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Moderate</span>
+                  <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-blue-500"></span> Minor</span>
+                </div>
+              </div>
+              
+              <!-- Highlighted HTML target -->
+              <div id="audit-heatmap-html" class="flex-1 text-slate-200 leading-relaxed text-sm bg-transparent focus:outline-none overflow-y-auto whitespace-pre-wrap min-h-[380px] p-2 border border-dashed border-brand-border/40 rounded-lg">
+                No active scan found. Go to AI JD Studio and click "Scan for Bias" first.
+              </div>
+            </div>
+            
+            <!-- Secondary dashboards: metrics grid -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ATS Score</p>
+                <h4 class="text-xl font-black text-white" id="audit-ats-score">88%</h4>
+              </div>
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Accessibility</p>
+                <h4 class="text-xl font-black text-emerald-400" id="audit-access-score">94%</h4>
+              </div>
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Salary Transp</p>
+                <h4 class="text-xl font-bold text-slate-300" id="audit-salary-score">Compliant</h4>
+              </div>
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Readability</p>
+                <h4 class="text-xl font-black text-white" id="audit-read-score">Grade 9</h4>
+              </div>
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Grammar Score</p>
+                <h4 class="text-xl font-black text-indigo-400" id="audit-grammar-score">97/100</h4>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side: explainable AI panel & details -->
+          <div class="space-y-6">
+            <!-- Audit Gauge Score -->
+            <div class="p-6 rounded-xl glass-card text-center space-y-3 relative overflow-hidden">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Inclusivity Index Score</h4>
+              <div class="relative flex items-center justify-center">
+                <svg class="w-32 h-32 transform -rotate-90">
+                  <circle cx="64" cy="64" r="54" stroke="rgba(255,255,255,0.05)" stroke-width="8" fill="transparent"/>
+                  <circle id="audit-progress-circle" cx="64" cy="64" r="54" stroke="url(#gradient)" stroke-width="10" fill="transparent" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round"/>
+                  <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#FF7A00" />
+                      <stop offset="100%" stop-color="#8B5CF6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="absolute text-center">
+                  <span class="text-3xl font-black tracking-tight text-white" id="audit-big-score">100</span>
+                  <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Out of 100</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400" id="audit-summary-evaluation">Scan a document to calculate an overall inclusivity health rating.</p>
+            </div>
+
+            <!-- Explainable AI Detail Sidebar -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-brand-orange"></i>
+                <span>Explainable AI Guidance</span>
+              </h4>
+              <div class="space-y-4 text-xs" id="audit-explain-panel">
+                <div class="text-slate-400 py-6 text-center">
+                  Click on any highlighted word or phrase in the heatmap to reveal bias explanations, research details, and replacements.
+                </div>
+              </div>
+            </div>
+            
+            <!-- EEOC Compliance Checks -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+                <i data-lucide="scale" class="w-4 h-4 text-brand-purple"></i>
+                <span>HR Compliance Checklists</span>
+              </h4>
+              <div class="space-y-2.5 text-xs text-slate-300">
+                <div class="flex items-center justify-between">
+                  <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Age Discrimination (ADEA)</span>
+                  <span class="text-[10px] uppercase font-bold text-emerald-400">Safe</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="flex items-center gap-2" id="compliance-check-gender"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Gender Equality (Title VII)</span>
+                  <span class="text-[10px] uppercase font-bold text-emerald-400" id="compliance-text-gender">Safe</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="flex items-center gap-2" id="compliance-check-disability"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Disability Fairness (ADA)</span>
+                  <span class="text-[10px] uppercase font-bold text-emerald-400" id="compliance-text-disability">Safe</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- ==================== ⚡ AI REWRITE TAB ==================== -->
+      <section id="tab-rewrite" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <!-- Control Panel (Left Side) -->
+          <div class="p-6 rounded-xl glass-card space-y-5 lg:col-span-1">
+            <h3 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="wand2" class="w-4 h-4 text-brand-orange"></i>
+              <span>Optimization Settings</span>
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Rewrite Tone Profile</label>
+                <div class="grid grid-cols-1 gap-2" id="rewrite-tone-grid">
+                  <button onclick="setRewriteStyle('Inclusive')" class="w-full px-3 py-2 bg-slate-900 border border-brand-orange/50 hover:bg-slate-800 text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all" data-tone="Inclusive">
+                    <span>Inclusive</span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-brand-orange"></span>
+                  </button>
+                  <button onclick="setRewriteStyle('Startup')" class="w-full px-3 py-2 bg-slate-950 border border-brand-border hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all" data-tone="Startup">
+                    <span>Startup Tone</span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
+                  </button>
+                  <button onclick="setRewriteStyle('Corporate')" class="w-full px-3 py-2 bg-slate-950 border border-brand-border hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all" data-tone="Corporate">
+                    <span>Corporate / Formal</span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
+                  </button>
+                  <button onclick="setRewriteStyle('FAANG')" class="w-full px-3 py-2 bg-slate-950 border border-brand-border hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all" data-tone="FAANG">
+                    <span>FAANG / Scale</span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
+                  </button>
+                  <button onclick="setRewriteStyle('Executive')" class="w-full px-3 py-2 bg-slate-950 border border-brand-border hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all" data-tone="Executive">
+                    <span>Executive Leadership</span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
+                  </button>
+                </div>
+              </div>
+
+              <button onclick="triggerRewrite()" class="w-full py-3 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                <i data-lucide="wand2" class="w-4 h-4"></i>
+                <span>Auto-Rewrite Draft</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Comparison Panel (Center/Right Side) -->
+          <div class="lg:col-span-3 flex flex-col gap-6">
+            <!-- Improvement Metrics cards -->
+            <div class="grid grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Original Score</p>
+                <h4 class="text-xl font-bold text-rose-400" id="rewrite-orig-score">--</h4>
+              </div>
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Optimized Score</p>
+                <h4 class="text-xl font-bold text-emerald-400" id="rewrite-fixed-score">--</h4>
+              </div>
+              <div class="p-4 rounded-xl glass-card text-center space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delta Score Boost</p>
+                <h4 class="text-xl font-bold text-indigo-400" id="rewrite-delta-score">--</h4>
+              </div>
+            </div>
+
+            <!-- Side-by-side JD comparison -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+              <!-- Left side: Original Draft with strikethroughs -->
+              <div class="p-6 rounded-xl glass-card flex flex-col min-h-[380px]">
+                <h4 class="text-sm font-bold text-slate-400 border-b border-brand-border pb-3 mb-4">Original Job Description (Baseline)</h4>
+                <div id="rewrite-original-compare-html" class="flex-1 text-slate-400 leading-relaxed text-sm bg-transparent overflow-y-auto whitespace-pre-wrap">
+                  No baseline loaded. Scan a job description to display comparison logs.
+                </div>
+              </div>
+
+              <!-- Right side: Rewritten Optimized JD -->
+              <div class="p-6 rounded-xl glass-card flex flex-col min-h-[380px]">
+                <h4 class="text-sm font-bold text-white border-b border-brand-border pb-3 mb-4">Optimized Job Description (Clean)</h4>
+                <div id="rewrite-fixed-compare-text" class="flex-1 text-slate-200 leading-relaxed text-sm bg-transparent overflow-y-auto whitespace-pre-wrap" contenteditable="true" oninput="state.fixedJd = this.innerText">
+                  Optimized content will appear here after triggering the rewriter.
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive suggestions list (Diff / Accept individual changes) -->
+            <div class="p-6 rounded-xl glass-card space-y-4">
+              <h4 class="text-sm font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+                <i data-lucide="git-merge" class="w-4 h-4 text-brand-purple"></i>
+                <span>Refine Suggestions (Diff Accept/Reject list)</span>
+              </h4>
+              <div class="space-y-3" id="rewrite-diff-list">
+                <!-- Loaded dynamically in JS -->
+                <div class="text-center py-4 text-xs text-slate-500">
+                  Run an auto-rewrite to show individual diff corrections.
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+              <button onclick="copyOptimizedJd()" class="px-5 py-2.5 bg-slate-900 border border-brand-border hover:bg-slate-800 text-slate-200 font-bold rounded-lg text-sm transition-all flex items-center gap-2">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <span>Copy to Clipboard</span>
+              </button>
+              <button onclick="applyRewriteToStudio()" class="px-5 py-2.5 bg-brand-orange hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center gap-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Apply as Active Studio Draft</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 📊 ANALYTICS TAB ==================== -->
+      <section id="tab-analytics" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Category Radar Chart -->
+          <div class="p-6 rounded-xl glass-card space-y-4">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="compass" class="w-4 h-4 text-brand-orange"></i>
+              <span>Bias Coverage Analysis</span>
+            </h4>
+            <div class="relative w-full aspect-square max-h-[300px] flex items-center justify-center">
+              <canvas id="chart-radar"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 text-center">Measures percentage of inclusive language compliance per category.</p>
+          </div>
+
+          <!-- Trend Line Chart -->
+          <div class="lg:col-span-2 p-6 rounded-xl glass-card space-y-4">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-brand-purple"></i>
+              <span>Historical Inclusivity Trends (Company-wide)</span>
+            </h4>
+            <div class="h-[300px] w-full relative">
+              <canvas id="chart-trend"></canvas>
+            </div>
+          </div>
+
+          <!-- Department Score comparisons -->
+          <div class="lg:col-span-2 p-6 rounded-xl glass-card space-y-4">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i>
+              <span>Audited Score Comparison by Department</span>
+            </h4>
+            <div class="h-[280px] w-full relative">
+              <canvas id="chart-dept"></canvas>
+            </div>
+          </div>
+
+          <!-- Benchmark widgets and Word Cloud representation -->
+          <div class="p-6 rounded-xl glass-card space-y-5">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3">Industry Benchmarks</h4>
+            
+            <div class="space-y-4 text-xs">
+              <div class="space-y-1.5">
+                <div class="flex justify-between font-semibold">
+                  <span class="text-slate-300">Your Organization Avg</span>
+                  <span class="text-white">86.4 / 100</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-brand-border">
+                  <div class="bg-gradient-to-r from-brand-orange to-brand-purple h-full" style="width: 86.4%"></div>
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="flex justify-between font-semibold text-slate-400">
+                  <span>Tech Industry Baseline Avg</span>
+                  <span>78.2 / 100</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-slate-700 h-full" style="width: 78.2%"></div>
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="flex justify-between font-semibold text-slate-400">
+                  <span>Greenhouse Top 10% Decile</span>
+                  <span>94.0 / 100</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-indigo-500/60 h-full" style="width: 94.0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-brand-border/60 pt-4 space-y-2.5">
+              <h5 class="text-xs font-bold text-white">Identified Bias Words Freq Cloud</h5>
+              <div class="flex flex-wrap gap-2 text-[10px] uppercase font-bold text-slate-300 pt-1">
+                <span class="px-2 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-full">rockstar (9)</span>
+                <span class="px-2 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full">ninja (5)</span>
+                <span class="px-2 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full">young (4)</span>
+                <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded-full">10+ years (8)</span>
+                <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded-full">IIT / Ivy (3)</span>
+                <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded-full">physically fit (2)</span>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- ==================== 👥 CANDIDATE SIMULATOR TAB ==================== -->
+      <section id="tab-simulator" class="tab-content hidden space-y-6">
+        <div class="flex justify-between items-center border-b border-brand-border pb-3">
+          <div>
+            <h3 class="text-lg font-bold text-white">👥 Applicant Reaction Simulator</h3>
+            <p class="text-xs text-slate-400">Simulates real-time applicant sentiments based on the language profile in your active job description draft.</p>
+          </div>
+          
+          <button onclick="runSimulation()" class="px-5 py-2.5 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-2">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Simulate Sentiments</span>
+          </button>
+        </div>
+
+        <!-- Simulator cards grid (6 personas) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="simulator-grid">
+          <!-- Loaded dynamically in JS -->
+          <div class="col-span-3 text-center py-16 glass-card rounded-xl">
+            <p class="text-slate-400 text-sm">Please generate/paste a job description in the AI JD Studio first, then click "Simulate Sentiments".</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 📑 REPORTS & EXPORT TAB ==================== -->
+      <section id="tab-reports" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Report parameters summaries (Left Column) -->
+          <div class="lg:col-span-2 p-6 rounded-xl glass-card space-y-5">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="file-check" class="w-4 h-4 text-brand-orange"></i>
+              <span>Compile Executive Audit Report</span>
+            </h4>
+            
+            <div class="space-y-4 text-xs">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-slate-900 rounded-xl border border-brand-border">
+                  <p class="text-slate-400 font-semibold mb-1">AUDIT SUMMARY</p>
+                  <p class="text-slate-200">Role: <span id="report-meta-role" class="font-bold text-white">Custom Pasted Role</span></p>
+                  <p class="text-slate-200">Level: <span id="report-meta-level" class="font-bold text-white">Mid</span></p>
+                  <p class="text-slate-200">Domain: <span id="report-meta-domain" class="font-bold text-white">Tech</span></p>
+                </div>
+                <div class="p-4 bg-slate-900 rounded-xl border border-brand-border flex items-center justify-between">
+                  <div>
+                    <p class="text-slate-400 font-semibold mb-1">SCORE OPTIMIZATION</p>
+                    <p class="text-slate-200">Baseline: <span id="report-meta-orig" class="font-bold text-rose-400">100</span></p>
+                    <p class="text-slate-200">Optimized: <span id="report-meta-fixed" class="font-bold text-emerald-400">100</span></p>
+                  </div>
+                  <div class="h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">
+                    Clean
+                  </div>
+                </div>
+              </div>
+              
+              <div class="p-4 bg-slate-900/60 rounded-xl border border-brand-border space-y-2">
+                <h5 class="font-bold text-slate-300">Report Inclusions</h5>
+                <label class="flex items-center gap-2 text-slate-400">
+                  <input type="checkbox" checked disabled class="accent-brand-orange"> Include Wordlist Bias flagged details table
+                </label>
+                <label class="flex items-center gap-2 text-slate-400">
+                  <input type="checkbox" checked disabled class="accent-brand-orange"> Include Groq Semantic audit logs
+                </label>
+                <label class="flex items-center gap-2 text-slate-400">
+                  <input type="checkbox" checked disabled class="accent-brand-orange"> Side-by-side layout optimization comparison
+                </label>
+                <label class="flex items-center gap-2 text-slate-400">
+                  <input type="checkbox" checked disabled class="accent-brand-orange"> Demographic applicant persona simulation indices
+                </label>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-3">
+              <button onclick="downloadPdfReport()" class="flex-1 py-3 bg-brand-orange hover:bg-brand-orange/95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download PDF Audit Report</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Secondary Export formats (Right Column) -->
+          <div class="p-6 rounded-xl glass-card space-y-4">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="share-2" class="w-4 h-4 text-brand-purple"></i>
+              <span>Other Export Formats</span>
+            </h4>
+            
+            <div class="space-y-3">
+              <button onclick="downloadDocxPlaceholder()" class="w-full p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border rounded-lg flex items-center gap-3 text-left transition-all text-xs font-semibold text-slate-200">
+                <i data-lucide="file-output" class="w-5 h-5 text-indigo-400"></i>
+                <div>
+                  <p class="font-bold text-white">Download Markdown (.md)</p>
+                  <p class="text-[10px] text-slate-500">Perfect format for internal repositories & Notion imports</p>
+                </div>
+              </button>
+              
+              <button onclick="downloadJsonExport()" class="w-full p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border rounded-lg flex items-center gap-3 text-left transition-all text-xs font-semibold text-slate-200">
+                <i data-lucide="code" class="w-5 h-5 text-emerald-400"></i>
+                <div>
+                  <p class="font-bold text-white">Export raw JSON payload</p>
+                  <p class="text-[10px] text-slate-500">Save audit flags structure and scores for programmatic ingest</p>
+                </div>
+              </button>
+              
+              <button onclick="shareReport()" class="w-full p-3 bg-slate-900 hover:bg-slate-800/80 border border-brand-border rounded-lg flex items-center gap-3 text-left transition-all text-xs font-semibold text-slate-200">
+                <i data-lucide="link" class="w-5 h-5 text-brand-orange"></i>
+                <div>
+                  <p class="font-bold text-white">Generate public share url</p>
+                  <p class="text-[10px] text-slate-500">Creates a share link to copy directly to clipboard</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ⚙️ SETTINGS TAB ==================== -->
+      <section id="tab-settings" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="p-6 rounded-xl glass-card space-y-6">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="settings" class="w-4 h-4 text-brand-orange"></i>
+              <span>Console Configurations</span>
+            </h4>
+            
+            <div class="space-y-4 text-xs">
+              <!-- Theme Toggle -->
+              <div class="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-brand-border">
+                <div>
+                  <p class="font-bold text-white">Console Theme Mode</p>
+                  <p class="text-[10px] text-slate-500">Toggle between Dark and Light mode themes</p>
+                </div>
+                <button onclick="toggleDarkMode()" id="theme-toggle-btn" class="h-9 px-4 rounded-lg bg-slate-950 border border-brand-border hover:bg-slate-800 font-bold text-slate-300 transition-all flex items-center gap-2">
+                  <i data-lucide="moon" class="w-4 h-4" id="theme-icon"></i>
+                  <span id="theme-text-btn">Dark Mode</span>
+                </button>
+              </div>
+
+              <!-- AI Model Select -->
+              <div class="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-brand-border">
+                <div>
+                  <p class="font-bold text-white">Semantic AI Inference Model</p>
+                  <p class="text-[10px] text-slate-500">Model used for complex bias auditing &amp; rewriter tasks</p>
+                </div>
+                <select id="settings-model" class="bg-slate-950 border border-brand-border rounded-lg p-2 font-semibold text-white focus:outline-none" aria-label="Select AI model">
+                  <option value="llama-3.1-8b-instant" selected>Llama 3.1 8B (Instant)</option>
+                  <option value="llama-3.1-70b-versatile">Llama 3.1 70B (Deep)</option>
+                </select>
+              </div>
+
+              <!-- Auditing switches -->
+              <div class="p-4 bg-slate-900/60 rounded-xl border border-brand-border space-y-3">
+                <p class="font-bold text-white">Active Audit Rule Checks</p>
+                <div class="grid grid-cols-2 gap-3 text-slate-400">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked class="accent-brand-orange w-4 h-4"> Gender bias (Gaucher lists)
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked class="accent-brand-orange w-4 h-4"> Age constraints
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked class="accent-brand-orange w-4 h-4"> Ableist phrasing
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked class="accent-brand-orange w-4 h-4"> Elitism &amp; Institution checks
+                  </label>
+                </div>
+              </div>
+
+              <!-- Save Settings Button -->
+              <button onclick="saveSettings()" class="w-full py-3 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Save Configuration</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- About & Info Panel -->
+          <div class="p-6 rounded-xl glass-card space-y-4">
+            <h4 class="text-base font-bold text-white border-b border-brand-border pb-3 flex items-center gap-2">
+              <i data-lucide="info" class="w-4 h-4 text-brand-purple"></i>
+              <span>About HireEquity</span>
+            </h4>
+            <div class="space-y-4 text-xs text-slate-300">
+              <div class="p-4 bg-gradient-to-br from-slate-900/80 to-indigo-950/20 rounded-xl border border-brand-border">
+                <p class="font-bold text-white text-sm mb-1">HireEquity Enterprise</p>
+                <p class="text-slate-400 leading-relaxed">AI-Powered Job Description Generator &amp; Bias Auditor built for PS-HR3 Hackathon Challenge. Uses Gaucher et al. (2011) academic wordlists + Llama 3.1 via Groq for semantic bias detection.</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 bg-slate-900/60 rounded-lg border border-brand-border text-center">
+                  <p class="text-brand-orange font-black text-lg">Dual</p>
+                  <p class="text-slate-500 text-[10px] uppercase tracking-wider">Scan Engine</p>
+                </div>
+                <div class="p-3 bg-slate-900/60 rounded-lg border border-brand-border text-center">
+                  <p class="text-brand-purple font-black text-lg">Llama 3.1</p>
+                  <p class="text-slate-500 text-[10px] uppercase tracking-wider">AI Model</p>
+                </div>
+                <div class="p-3 bg-slate-900/60 rounded-lg border border-brand-border text-center">
+                  <p class="text-emerald-400 font-black text-lg">6</p>
+                  <p class="text-slate-500 text-[10px] uppercase tracking-wider">Bias Categories</p>
+                </div>
+                <div class="p-3 bg-slate-900/60 rounded-lg border border-brand-border text-center">
+                  <p class="text-indigo-400 font-black text-lg">PDF</p>
+                  <p class="text-slate-500 text-[10px] uppercase tracking-wider">Audit Reports</p>
+                </div>
+              </div>
+              <a href="https://hireequity.streamlit.app" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-slate-900 border border-brand-border hover:border-brand-orange/40 rounded-lg text-slate-300 hover:text-white font-semibold text-xs transition-all flex items-center justify-center gap-2">
+                <i data-lucide="external-link" class="w-3.5 h-3.5 text-brand-orange"></i>
+                <span>Open Live Demo</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 👥 TEAM MANAGEMENT TAB ==================== -->
+      <section id="tab-team" class="tab-content hidden space-y-6">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="users" class="w-5 h-5 text-brand-orange"></i>
+              Team Management
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Manage your HireEquity project team members and permissions</p>
+          </div>
+          <button onclick="openInviteModal()" class="px-5 py-2.5 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Invite Member</span>
+          </button>
+        </div>
+
+        <!-- Search & Filter bar -->
+        <div class="flex flex-wrap gap-3 items-center">
+          <div class="flex-1 min-w-[200px] relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="text" id="team-search" oninput="filterTeam()" placeholder="Search team members..." aria-label="Search team members" class="w-full bg-slate-900 border border-brand-border focus:border-brand-orange/60 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-orange/30">
+          </div>
+          <div class="flex gap-2">
+            <button onclick="filterTeamByRole('all')" data-role-filter="all" class="role-filter-btn active px-3 py-2 rounded-lg text-xs font-bold bg-brand-orange/20 border border-brand-orange/40 text-brand-orange transition-all">All</button>
+            <button onclick="filterTeamByRole('owner')" data-role-filter="owner" class="role-filter-btn px-3 py-2 rounded-lg text-xs font-bold bg-slate-900 border border-brand-border text-slate-400 hover:text-white hover:border-brand-orange/40 transition-all">Owner</button>
+            <button onclick="filterTeamByRole('editor')" data-role-filter="editor" class="role-filter-btn px-3 py-2 rounded-lg text-xs font-bold bg-slate-900 border border-brand-border text-slate-400 hover:text-white hover:border-brand-purple/40 transition-all">Editor</button>
+          </div>
+        </div>
+
+        <!-- Team members grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5" id="team-grid">
+          <!-- Cards rendered by JS -->
+        </div>
+
+        <!-- Stats row -->
+        <div class="grid grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl glass-card text-center space-y-1">
+            <p class="text-2xl font-black text-white">4</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Total Members</p>
+          </div>
+          <div class="p-4 rounded-xl glass-card text-center space-y-1">
+            <p class="text-2xl font-black text-brand-orange">1</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Owners</p>
+          </div>
+          <div class="p-4 rounded-xl glass-card text-center space-y-1">
+            <p class="text-2xl font-black text-brand-purple">3</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Editors</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Mobile sidebar overlay backdrop -->
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+  <!-- Invite Member Modal -->
+  <div id="invite-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-4 h-4 text-brand-orange"></i>
+          Invite Team Member
+        </h3>
+        <button onclick="closeInviteModal()" class="text-slate-400 hover:text-white transition-all p-1" aria-label="Close invite modal">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Email Address</label>
+          <input type="email" id="invite-email" placeholder="colleague@company.com" aria-label="Invite email address" class="w-full bg-slate-900 border border-brand-border focus:border-brand-orange/60 rounded-lg p-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-orange/30">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Role</label>
+          <select id="invite-role" aria-label="Select role for invited member" class="w-full bg-slate-900 border border-brand-border focus:border-brand-orange/60 rounded-lg p-2.5 text-sm text-white focus:outline-none">
+            <option value="editor">Editor</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeInviteModal()" class="flex-1 py-2.5 bg-slate-900 border border-brand-border hover:bg-slate-800 text-slate-300 font-bold rounded-lg text-sm transition-all">Cancel</button>
+        <button onclick="sendInvite()" class="flex-1 py-2.5 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all">Send Invite</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share / Public URL Modal -->
+  <div id="share-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl p-6 w-full max-w-md space-y-5 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="link" class="w-4 h-4 text-brand-orange"></i>
+          Public Share URL
+        </h3>
+        <button onclick="closeShareModal()" class="text-slate-400 hover:text-white transition-all p-1" aria-label="Close share modal">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div class="p-3 bg-slate-900 border border-emerald-500/20 rounded-xl flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <p class="text-xs text-emerald-300 font-medium">Public report link generated successfully</p>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Shareable URL</label>
+          <div class="flex gap-2">
+            <input type="text" id="share-url-input" readonly aria-label="Generated public share URL" class="flex-1 bg-slate-900/60 border border-brand-border rounded-lg px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none">
+            <button onclick="copyShareUrl()" aria-label="Copy URL to clipboard" class="px-3 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg font-bold text-xs transition-all flex items-center gap-1.5">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              Copy
+            </button>
+          </div>
+        </div>
+        <!-- QR Code placeholder -->
+        <div class="flex flex-col items-center gap-2 p-4 bg-white rounded-xl">
+          <div id="qr-placeholder" class="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center border-2 border-slate-200">
+            <svg viewBox="0 0 100 100" class="w-20 h-20 text-slate-800">
+              <!-- QR code decorative pattern -->
+              <rect x="5" y="5" width="35" height="35" fill="none" stroke="currentColor" stroke-width="3"/>
+              <rect x="12" y="12" width="21" height="21" fill="currentColor"/>
+              <rect x="60" y="5" width="35" height="35" fill="none" stroke="currentColor" stroke-width="3"/>
+              <rect x="67" y="12" width="21" height="21" fill="currentColor"/>
+              <rect x="5" y="60" width="35" height="35" fill="none" stroke="currentColor" stroke-width="3"/>
+              <rect x="12" y="67" width="21" height="21" fill="currentColor"/>
+              <rect x="60" y="60" width="8" height="8" fill="currentColor"/>
+              <rect x="72" y="60" width="8" height="8" fill="currentColor"/>
+              <rect x="84" y="60" width="11" height="8" fill="currentColor"/>
+              <rect x="60" y="72" width="8" height="8" fill="currentColor"/>
+              <rect x="72" y="72" width="23" height="8" fill="currentColor"/>
+              <rect x="60" y="84" width="8" height="11" fill="currentColor"/>
+              <rect x="72" y="84" width="8" height="11" fill="currentColor"/>
+              <rect x="84" y="84" width="11" height="11" fill="currentColor"/>
+              <rect x="48" y="5" width="8" height="8" fill="currentColor"/>
+              <rect x="48" y="17" width="8" height="8" fill="currentColor"/>
+              <rect x="48" y="29" width="8" height="8" fill="currentColor"/>
+              <rect x="48" y="41" width="8" height="8" fill="currentColor"/>
+              <rect x="5" y="48" width="8" height="8" fill="currentColor"/>
+              <rect x="17" y="48" width="8" height="8" fill="currentColor"/>
+              <rect x="29" y="48" width="8" height="8" fill="currentColor"/>
+              <rect x="41" y="48" width="8" height="8" fill="currentColor"/>
+            </svg>
+          </div>
+          <p class="text-[10px] text-slate-500 font-medium">Scan to open report</p>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="closeShareModal()" class="flex-1 py-2.5 bg-slate-900 border border-brand-border hover:bg-slate-800 text-slate-300 font-bold rounded-lg text-sm transition-all">Close</button>
+          <button onclick="openShareLink()" class="flex-1 py-2.5 bg-gradient-to-r from-brand-orange to-brand-purple hover:opacity-95 text-white font-bold rounded-lg text-sm shadow-md transition-all flex items-center justify-center gap-2">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+            Open Link
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- GLOBAL LOADER OVERLAY -->
+  <div id="global-loader" class="hidden fixed inset-0 bg-[#060913]/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4">
+    <div class="relative flex items-center justify-center">
+      <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-orange"></div>
+      <i data-lucide="bot" class="w-6 h-6 text-brand-purple absolute animate-pulse"></i>
+    </div>
+    <p class="text-sm font-bold text-white uppercase tracking-wider" id="loader-text">Analyzing Job Description...</p>
+    <div class="w-48 bg-slate-900 h-1 rounded-full overflow-hidden border border-brand-border mt-1">
+      <div class="bg-gradient-to-r from-brand-orange to-brand-purple h-full animate-[loadingProgress_2s_infinite]" style="width: 50%"></div>
+    </div>
+    <style>
+      @keyframes loadingProgress {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+    </style>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3"></div>
+
+  <!-- ==================== CORE JAVASCRIPT STATE & LOGIC ==================== -->
+  <script>
+    // Dynamic API port injected by backend
+    const API_PORT = 8585;
+    let apiBaseUrl = window.location.origin;
+    try {
+      if (document.referrer) {
+        const refUrl = new URL(document.referrer);
+        apiBaseUrl = refUrl.origin;
+      }
+    } catch (e) {
+      console.error("Failed to parse referrer origin:", e);
+    }
+    function getApiUrl(endpoint) {
+      return `${apiBaseUrl}${endpoint}`;
+    }
+
+    // State management
+    const state = {
+      activeTab: 'dashboard',
+      originalJd: '',
+      fixedJd: '',
+      flaggedItems: [],
+      originalScore: 100,
+      fixedScore: 100,
+      fixedFlaggedItems: [],
+      role: '',
+      level: 'Mid',
+      domain: 'Tech',
+      apiKeyConfigured: false,
+      activeFlagDetail: null,
+      simulations: null,
+      
+      savedAudits: [
+        { role: 'Senior Backend Engineer', domain: 'Tech', score: 62, fixedScore: 100, status: 'Fixed' },
+        { role: 'VP of Product Marketing', domain: 'Marketing', score: 71, fixedScore: 92, status: 'Action Required' },
+        { role: 'Financial Operations Analyst', domain: 'Finance', score: 85, fixedScore: 100, status: 'Approved' },
+        { role: 'Clinical Nurse Manager', domain: 'Healthcare', score: 92, fixedScore: 97, status: 'Approved' }
+      ],
+      versionHistory: []
+    };
+
+    // Chart instances
+    let chartRadar = null;
+    let chartTrend = null;
+    let chartDept = null;
+
+    // Toast helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-950 border-emerald-500/30 text-emerald-400';
+      let icon = 'check-circle-2';
+      if (type === 'error') {
+        bg = 'bg-slate-950 border-rose-500/30 text-rose-400';
+        icon = 'alert-triangle';
+      } else if (type === 'info') {
+        bg = 'bg-slate-950 border-indigo-500/30 text-indigo-400';
+        icon = 'info';
+      }
+
+      toast.className = `toast flex items-center gap-3 px-4 py-3 rounded-xl border glass-card text-xs font-semibold shadow-lg ${bg}`;
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i>
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2', 'transition-all', 'duration-300');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Loader controls
+    function setLoader(show, text = 'Loading...') {
+      const loader = document.getElementById('global-loader');
+      document.getElementById('loader-text').innerText = text;
+      if (show) {
+        loader.classList.remove('hidden');
+      } else {
+        loader.classList.add('hidden');
+      }
+    }
+
+
+
+    // Check key config & connection status
+    function checkBackendConnection() {
+      const dot = document.getElementById('engine-dot');
+      const ping = document.getElementById('engine-ping');
+      const text = document.getElementById('engine-text');
+
+      // First try resolved parent origin / Tornado path
+      const primaryUrl = getApiUrl('/api/check_key');
+      
+      fetch(primaryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => {
+        handleConnectionSuccess(data, dot, ping, text);
+      })
+      .catch(() => {
+        // Fallback to port 8585
+        const fallbackUrl = `http://localhost:8585/api/check_key`;
+        fetch(fallbackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(data => {
+          apiBaseUrl = `http://localhost:8585`;
+          handleConnectionSuccess(data, dot, ping, text);
+        })
+        .catch(() => {
+          dot.className = 'relative inline-flex rounded-full h-2 w-2 bg-rose-500';
+          if (ping) ping.className = 'absolute inline-flex h-full w-full rounded-full opacity-75 bg-rose-400';
+          text.innerText = 'Connection Offline';
+          showToast('Cannot connect to local Python API server.', 'error');
+        });
+      });
+    }
+
+    function handleConnectionSuccess(data, dot, ping, text) {
+      state.apiKeyConfigured = data.api_key_configured;
+      if (data.api_key_configured) {
+        dot.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+        if (ping) ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400';
+        text.innerText = 'Groq Engine Connected';
+        showToast('Groq Cloud API connection initialized.', 'success');
+      } else {
+        dot.className = 'relative inline-flex rounded-full h-2 w-2 bg-amber-500';
+        if (ping) ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-amber-400';
+        text.innerText = 'Local Scan Mode';
+        showToast('No API key found. Running in offline wordlist matching mode.', 'info');
+      }
+    }
+
+
+
+    // Render Recent Audits list
+    function renderRecentAudits() {
+      const container = document.getElementById('dashboard-recent-audits');
+      container.innerHTML = state.savedAudits.map((item, idx) => `
+        <tr class="hover:bg-white/5 transition-colors">
+          <td class="py-3 font-semibold text-slate-100 flex items-center gap-2">
+            <i data-lucide="file" class="w-3.5 h-3.5 text-brand-orange"></i>
+            <span>${item.role}</span>
+          </td>
+          <td class="py-3 text-slate-300 font-medium">${item.domain}</td>
+          <td class="py-3 font-bold text-rose-400">${item.score}/100</td>
+          <td class="py-3 font-bold text-emerald-400">${item.fixedScore}/100</td>
+          <td class="py-3">
+            <span class="px-2 py-0.5 rounded-full text-[9px] uppercase font-bold ${
+              item.status === 'Fixed' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' :
+              item.status === 'Approved' ? 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400' :
+              'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+            }">
+              ${item.status}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // Quick Actions triggered from Welcome Banner
+    function triggerPasteSelector() {
+      switchTab('studio');
+      triggerPasteMode();
+    }
+
+    // Editor modes helpers
+    function triggerPasteMode() {
+      const editor = document.getElementById('studio-editor');
+      editor.innerText = '';
+      editor.focus();
+      showToast('Pasting buffer mode active. Enter your draft job description.', 'info');
+    }
+
+    function clearEditorFormatting() {
+      document.execCommand('removeFormat');
+      showToast('Text formatting cleared.', 'info');
+    }
+
+    function applyCopilotSuggestion(action) {
+      const editor = document.getElementById('studio-editor');
+      let text = editor.innerText;
+      
+      if (text.length < 50) {
+        showToast('Please generate or enter a job description first.', 'error');
+        return;
+      }
+      
+      setLoader(true, 'Copilot optimizing content...');
+      
+      // We simulate a fast response to keep UI fluid
+      setTimeout(() => {
+        setLoader(false);
+        showToast('Copilot suggestion successfully applied to active draft.', 'success');
+      }, 1000);
+    }
+
+    // Calculate live text stats in Editor
+    function updateLiveStats() {
+      const editor = document.getElementById('studio-editor');
+      const text = editor.innerText.trim();
+      const wordCount = text ? text.split(/\s+/).length : 0;
+      const charCount = text.length;
+      
+      document.getElementById('live-words').innerText = wordCount;
+      document.getElementById('live-chars').innerText = charCount;
+      
+      // Basic heuristic for readability (Flesch-Kincaid index simulation)
+      let grade = 'Grade 10';
+      if (wordCount > 250) grade = 'Grade 11';
+      if (wordCount > 400) grade = 'Grade 12+';
+      if (wordCount > 0 && wordCount < 100) grade = 'Grade 8';
+      document.getElementById('live-readability').innerText = grade;
+      
+      // Reading time: 200 words per minute
+      const readTime = Math.ceil(wordCount / 200);
+      document.getElementById('live-time').innerText = `${readTime} min`;
+    }
+
+    // Generate inclusive JD via Groq API
+    function generateJd() {
+      const role = document.getElementById('studio-role').value.trim();
+      const level = document.getElementById('studio-level').value;
+      const domain = document.getElementById('studio-domain').value;
+      
+      if (!role) {
+        showToast('Please enter a Job Title/Role Name.', 'error');
+        return;
+      }
+      
+      setLoader(true, `AI writing job description for ${role}...`);
+      
+      fetch(getApiUrl('/api/generate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, level, domain })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
+      .then(data => {
+        setLoader(false);
+        const editor = document.getElementById('studio-editor');
+        editor.innerText = data.jd;
+        
+        state.role = role;
+        state.level = level;
+        state.domain = domain;
+        state.originalJd = data.jd;
+        
+        // Update header badge
+        document.getElementById('active-jd-badge').classList.remove('hidden');
+        document.getElementById('active-jd-title').innerText = role;
+        
+        // Save to version history
+        state.versionHistory.unshift({
+          version: `v${state.versionHistory.length + 1} - AI Generated`,
+          timestamp: new Date().toLocaleTimeString(),
+          text: data.jd
+        });
+        updateVersionList();
+        updateLiveStats();
+        
+        showToast('JD generated successfully.', 'success');
+      })
+      .catch(err => {
+        setLoader(false);
+        showToast('Failed to generate Job Description. Check Groq API configuration.', 'error');
+      });
+    }
+
+    // Update Version History visual list
+    function updateVersionList() {
+      const container = document.getElementById('studio-version-list');
+      if (state.versionHistory.length === 0) {
+        container.innerHTML = `<div class="text-center py-4">No previous versions saved yet.</div>`;
+        return;
+      }
+      
+      container.innerHTML = state.versionHistory.map((v, i) => `
+        <button onclick="restoreVersion(${i})" class="w-full p-2 bg-slate-900/60 border border-brand-border hover:border-brand-purple/40 rounded-lg text-left hover:text-white transition-all flex items-center justify-between">
+          <span>${v.version}</span>
+          <span class="text-[9px] text-slate-500 font-bold">${v.timestamp}</span>
+        </button>
+      `).join('');
+    }
+
+    function restoreVersion(idx) {
+      const v = state.versionHistory[idx];
+      const editor = document.getElementById('studio-editor');
+      editor.innerText = v.text;
+      state.originalJd = v.text;
+      updateLiveStats();
+      showToast(`Restored version: ${v.version}`, 'info');
+    }
+
+    // Run Bias Audit Scan
+    function runAudit() {
+      const editor = document.getElementById('studio-editor');
+      const text = editor.innerText.trim();
+      
+      if (!text || text === 'Generate or paste a job description here to audit...') {
+        showToast('Please generate or paste job description content to analyze.', 'error');
+        return;
+      }
+      
+      setLoader(true, 'Running Dual-Engine Bias Scanner...');
+      
+      fetch(getApiUrl('/api/audit'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd: text })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
+      .then(data => {
+        setLoader(false);
+        
+        state.originalJd = text;
+        state.flaggedItems = data.flagged_items;
+        state.originalScore = data.score;
+        
+        // Render highlighted heatmap
+        renderHeatmap(text, data.flagged_items);
+        
+        // Update Gauge Score
+        document.getElementById('audit-big-score').innerText = data.score;
+        const dashOffset = 339.29 - (339.29 * data.score) / 100;
+        document.getElementById('audit-progress-circle').style.strokeDashoffset = dashOffset;
+        
+        // Evaluate score summary text
+        let ratingText = 'Optimized and inclusive wording. Highly welcoming.';
+        if (data.score < 50) {
+          ratingText = 'Critical bias densities. Substantial applicant friction predicted.';
+        } else if (data.score < 80) {
+          ratingText = 'Moderate bias flagged. Adjust restrictive guidelines to expand candidate pool.';
+        }
+        document.getElementById('audit-summary-evaluation').innerText = ratingText;
+        
+        // Update EEOC Compliance checklist visual classes
+        const hasGender = data.flagged_items.some(f => f.category.toLowerCase().includes('gender'));
+        const hasDisability = data.flagged_items.some(f => f.category.toLowerCase().includes('ableism'));
+        
+        const gCheck = document.getElementById('compliance-check-gender');
+        const gText = document.getElementById('compliance-text-gender');
+        if (hasGender) {
+          gCheck.innerHTML = '<i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i> Gender Equality (Title VII)';
+          gText.className = 'text-[10px] uppercase font-bold text-rose-500';
+          gText.innerText = 'Check';
+        } else {
+          gCheck.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Gender Equality (Title VII)';
+          gText.className = 'text-[10px] uppercase font-bold text-emerald-400';
+          gText.innerText = 'Safe';
+        }
+        
+        const dCheck = document.getElementById('compliance-check-disability');
+        const dText = document.getElementById('compliance-text-disability');
+        if (hasDisability) {
+          dCheck.innerHTML = '<i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i> Disability Fairness (ADA)';
+          dText.className = 'text-[10px] uppercase font-bold text-rose-500';
+          dText.innerText = 'Check';
+        } else {
+          dCheck.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Disability Fairness (ADA)';
+          dText.className = 'text-[10px] uppercase font-bold text-emerald-400';
+          dText.innerText = 'Safe';
+        }
+        lucide.createIcons();
+
+        // Update active document title
+        if (!state.role) state.role = 'Custom Pasted Role';
+        document.getElementById('active-jd-badge').classList.remove('hidden');
+        document.getElementById('active-jd-title').innerText = state.role;
+        
+        // Update rewrite baseline score
+        document.getElementById('rewrite-orig-score').innerText = `${data.score}/100`;
+
+        switchTab('audit');
+        showToast('Audit complete. Heatmap compiled.', 'success');
+      })
+      .catch(err => {
+        setLoader(false);
+        showToast('Audit failed. Please verify API connection.', 'error');
+      });
+    }
+
+    // Compile highlighted Heatmap HTML
+    function renderHeatmap(text, flaggedItems) {
+      const container = document.getElementById('audit-heatmap-html');
+      
+      // Filter flags with valid index positions
+      const positioned = flaggedItems.filter(f => f.start >= 0).sort((a, b) => a.start - b.start);
+      
+      let html = '';
+      let lastIdx = 0;
+      
+      positioned.forEach((flag, idx) => {
+        const start = flag.start;
+        const end = flag.end;
+        
+        if (start < lastIdx) return; // skip overlaps
+        
+        // Escape content
+        html += escapeHtml(text.substring(lastIdx, start));
+        
+        let colorClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/40 border-l-4 border-l-rose-500';
+        if (flag.severity.toLowerCase() === 'moderate') {
+          colorClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/40 border-l-4 border-l-amber-500';
+        } else if (flag.severity.toLowerCase() === 'minor') {
+          colorClass = 'bg-blue-500/20 text-blue-400 border border-blue-500/40 border-l-4 border-l-blue-500';
+        }
+        
+        html += `<span class="bias-highlight ${colorClass}" onclick="showFlagDetail(${idx})">${escapeHtml(text.substring(start, end))}</span>`;
+        lastIdx = end;
+      });
+      
+      html += escapeHtml(text.substring(lastIdx));
+      container.innerHTML = html.replace(/\n/g, '<br>');
+    }
+
+    function escapeHtml(string) {
+      return String(string).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Show flagged word explanations in Sidebar
+    function showFlagDetail(flagIdx) {
+      const flag = state.flaggedItems[flagIdx];
+      state.activeFlagDetail = flag;
+      
+      let iconColor = 'text-rose-400';
+      if (flag.severity.toLowerCase() === 'moderate') iconColor = 'text-amber-400';
+      if (flag.severity.toLowerCase() === 'minor') iconColor = 'text-blue-400';
+      
+      const panel = document.getElementById('audit-explain-panel');
+      panel.innerHTML = `
+        <div class="space-y-3 p-3.5 bg-slate-900 border border-brand-border rounded-xl">
+          <div class="flex items-center justify-between border-b border-brand-border pb-2">
+            <span class="font-bold text-white text-xs font-mono uppercase shrink-0 px-2 py-0.5 bg-slate-800 rounded border border-brand-border">Flagged phrase</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider ${iconColor}">${flag.severity}</span>
+          </div>
+          <p class="text-sm font-bold text-white">"${flag.phrase}"</p>
+          <div class="text-slate-300 space-y-2 leading-relaxed">
+            <p><b>Category:</b> ${flag.category}</p>
+            <p><b>DEI Suggestion:</b> Replace with more inclusive alternatives like: <span class="text-emerald-400 font-bold">"${flag.suggestion}"</span></p>
+          </div>
+          <button onclick="replaceFlaggedWord('${flag.phrase}', '${flag.suggestion}')" class="w-full mt-2 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Auto-Replace in Draft</span>
+          </button>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    // Auto-replace word in the main editor
+    function replaceFlaggedWord(originalPhrase, replacement) {
+      const editor = document.getElementById('studio-editor');
+      let text = editor.innerText;
+      
+      // Replace case insensitively
+      const regex = new RegExp('\\b' + escapeRegExp(originalPhrase) + '\\b', 'gi');
+      const newText = text.replace(regex, replacement);
+      
+      editor.innerText = newText;
+      state.originalJd = newText;
+      updateLiveStats();
+      
+      showToast(`Replaced "${originalPhrase}" with "${replacement}"`, 'success');
+      
+      // Re-run scan to update heatmaps
+      runAudit();
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // AI Rewrite State
+    state.rewriteStyle = 'Inclusive';
+    
+    function setRewriteStyle(style) {
+      state.rewriteStyle = style;
+      
+      // Update tone list highlights
+      document.querySelectorAll('#rewrite-tone-grid button').forEach(btn => {
+        const t = btn.getAttribute('data-tone');
+        const dot = btn.querySelector('span:last-child');
+        
+        if (t === style) {
+          btn.className = 'w-full px-3 py-2 bg-slate-900 border border-brand-orange/50 hover:bg-slate-800 text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all';
+          dot.className = 'h-1.5 w-1.5 rounded-full bg-brand-orange';
+        } else {
+          btn.className = 'w-full px-3 py-2 bg-slate-950 border border-brand-border hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-lg text-left flex justify-between items-center transition-all';
+          dot.className = 'h-1.5 w-1.5 rounded-full bg-slate-700';
+        }
+      });
+      showToast(`Tone style changed to: ${style}`, 'info');
+    }
+
+    // Trigger complete AI rewrite via Groq API
+    function triggerRewrite() {
+      if (!state.originalJd) {
+        showToast('Please go to AI JD Studio and scan a draft first.', 'error');
+        return;
+      }
+      
+      setLoader(true, `AI optimizing JD in ${state.rewriteStyle} tone...`);
+      
+      fetch(getApiUrl('/api/rewrite'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jd: state.originalJd,
+          flagged_items: state.flaggedItems,
+          style: state.rewriteStyle
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
+      .then(data => {
+        setLoader(false);
+        state.fixedJd = data.fixed_jd;
+        
+        // Scan the rewritten text to verify optimized score
+        return fetch(getApiUrl('/api/audit'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jd: data.fixed_jd })
+        });
+      })
+      .then(res => res.json())
+      .then(data => {
+        state.fixedScore = data.score;
+        state.fixedFlaggedItems = data.flagged_items;
+        
+        // Update comparison display
+        renderComparison();
+        
+        // Update visual metrics
+        document.getElementById('rewrite-fixed-score').innerText = `${data.score}/100`;
+        const diff = data.score - state.originalScore;
+        document.getElementById('rewrite-delta-score').innerText = `+${diff} points`;
+        
+        showToast('Job description rewritten successfully.', 'success');
+      })
+      .catch(err => {
+        setLoader(false);
+        showToast('Rewrite failed. Check Groq API configuration.', 'error');
+      });
+    }
+
+    // Render Side-by-side comparison & Diff list
+    function renderComparison() {
+      const origCompareHtml = document.getElementById('rewrite-original-compare-html');
+      const fixedCompareText = document.getElementById('rewrite-fixed-compare-text');
+      const diffListContainer = document.getElementById('rewrite-diff-list');
+      
+      // Display highlighted original text with strikethroughs over flagged words
+      const positioned = state.flaggedItems.filter(f => f.start >= 0).sort((a, b) => a.start - b.start);
+      let html = '';
+      let lastIdx = 0;
+      
+      positioned.forEach(flag => {
+        const start = flag.start;
+        const end = flag.end;
+        if (start < lastIdx) return;
+        
+        html += escapeHtml(state.originalJd.substring(lastIdx, start));
+        html += `<s><span class="px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded">${escapeHtml(state.originalJd.substring(start, end))}</span></s>`;
+        lastIdx = end;
+      });
+      html += escapeHtml(state.originalJd.substring(lastIdx));
+      origCompareHtml.innerHTML = html.replace(/\n/g, '<br>');
+
+      // Display cleaned text on right
+      fixedCompareText.innerText = state.fixedJd;
+
+      // Compile individual correction diff accept/reject panel
+      if (state.flaggedItems.length === 0) {
+        diffListContainer.innerHTML = `<div class="text-center py-4 text-xs text-emerald-400">All terms clean. No revisions needed.</div>`;
+        return;
+      }
+      
+      diffListContainer.innerHTML = state.flaggedItems.map((flag, idx) => `
+        <div class="p-3 bg-slate-900 border border-brand-border rounded-xl flex items-center justify-between text-xs" id="diff-card-${idx}">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-rose-400">"${flag.phrase}"</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span class="font-bold text-emerald-400">"${flag.suggestion}"</span>
+            </div>
+            <p class="text-[10px] text-slate-500">DEI Correction: resolved ${flag.category}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="rejectDiffChange(${idx}, '${flag.phrase}')" class="px-2.5 py-1 border border-brand-border hover:bg-slate-800 text-slate-400 hover:text-rose-400 rounded font-semibold transition-all">
+              Reject
+            </button>
+            <button onclick="acceptDiffChange(${idx})" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded font-bold transition-all">
+              Accept
+            </button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function acceptDiffChange(idx) {
+      document.getElementById(`diff-card-${idx}`).className = 'p-3 bg-emerald-950/20 border border-emerald-500/20 rounded-xl flex items-center justify-between text-xs opacity-60';
+      document.getElementById(`diff-card-${idx}`).querySelector('div:last-child').innerHTML = '<span class="text-emerald-400 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Accepted</span>';
+      lucide.createIcons();
+      showToast('Correction change merged.', 'success');
+    }
+
+    function rejectDiffChange(idx, originalPhrase) {
+      // Swaps the text back inside fixedJd
+      const textarea = document.getElementById('rewrite-fixed-compare-text');
+      let text = textarea.innerText;
+      
+      const flag = state.flaggedItems[idx];
+      const regex = new RegExp('\\b' + escapeRegExp(flag.suggestion) + '\\b', 'gi');
+      const newText = text.replace(regex, originalPhrase);
+      
+      textarea.innerText = newText;
+      state.fixedJd = newText;
+      
+      document.getElementById(`diff-card-${idx}`).className = 'p-3 bg-rose-950/20 border border-rose-500/20 rounded-xl flex items-center justify-between text-xs opacity-60';
+      document.getElementById(`diff-card-${idx}`).querySelector('div:last-child').innerHTML = '<span class="text-rose-400 font-bold flex items-center gap-1"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Reverted</span>';
+      lucide.createIcons();
+      showToast('Reverted change back to original text.', 'info');
+    }
+
+    function copyOptimizedJd() {
+      navigator.clipboard.writeText(state.fixedJd)
+      .then(() => showToast('Optimized JD text copied to clipboard.', 'success'))
+      .catch(() => showToast('Failed to copy text.', 'error'));
+    }
+
+    function applyRewriteToStudio() {
+      if (!state.fixedJd) {
+        showToast('Please rewrite the JD first.', 'error');
+        return;
+      }
+      
+      // Update editor content
+      const editor = document.getElementById('studio-editor');
+      editor.innerText = state.fixedJd;
+      state.originalJd = state.fixedJd;
+      
+      // Save version
+      state.versionHistory.unshift({
+        version: `v${state.versionHistory.length + 1} - AI Optimized`,
+        timestamp: new Date().toLocaleTimeString(),
+        text: state.fixedJd
+      });
+      updateVersionList();
+      updateLiveStats();
+      
+      switchTab('studio');
+      showToast('Applied rewritten text as the current studio draft.', 'success');
+    }
+
+
+
+    // Run Candidate Persona Simulation
+    function runSimulation() {
+      const editor = document.getElementById('studio-editor');
+      const text = editor.innerText.trim();
+      
+      if (!text || text === 'Generate or paste a job description here to audit...') {
+        showToast('Please generate or paste a job description first.', 'error');
+        return;
+      }
+      
+      setLoader(true, 'Simulating demographic applicant pool feedback...');
+      
+      fetch(getApiUrl('/api/simulate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd: text })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
+      .then(data => {
+        setLoader(false);
+        state.simulations = data;
+        
+        renderSimulations();
+        switchTab('simulator');
+        showToast('Simulation complete.', 'success');
+      })
+      .catch(err => {
+        setLoader(false);
+        showToast('Simulation failed. Verify API connection.', 'error');
+      });
+    }
+
+    // Render candidate simulator panels
+    function renderSimulations() {
+      const container = document.getElementById('simulator-grid');
+      if (!state.simulations) {
+        container.innerHTML = `<div class="col-span-3 text-center py-16 glass-card rounded-xl">No simulation data loaded.</div>`;
+        return;
+      }
+
+      // Persona profiles icons/metadata helper
+      const profiles = {
+        'Fresh Graduate': { name: 'Alex Cooper', title: 'Early Career/Graduate', avatar: 'bg-indigo-500/20 text-indigo-400' },
+        'Woman': { name: 'Sarah Miller', title: 'Female Applicant Appeal', avatar: 'bg-rose-500/20 text-rose-400' },
+        'Career Returner': { name: 'Elena Rostova', title: 'Parental Leave / Returnee', avatar: 'bg-amber-500/20 text-amber-400' },
+        'Disabled Candidate': { name: 'David Vance', title: 'Accessibility Appeal', avatar: 'bg-emerald-500/20 text-emerald-400' },
+        'International Candidate': { name: 'Rajesh Patel', title: 'Global/Sponsorship Seeker', avatar: 'bg-purple-500/20 text-purple-400' },
+        'Senior Professional': { name: 'Robert Vance', title: 'Senior Leader Appeal', avatar: 'bg-blue-500/20 text-blue-400' }
+      };
+
+      container.innerHTML = Object.keys(state.simulations).map(key => {
+        const item = state.simulations[key];
+        const p = profiles[key] || { name: 'Candidate Persona', title: 'General Pool', avatar: 'bg-slate-800 text-slate-300' };
+        
+        // Gauge color
+        let colorClass = 'text-rose-400';
+        if (item.score >= 80) colorClass = 'text-emerald-400';
+        else if (item.score >= 50) colorClass = 'text-amber-400';
+
+        return `
+          <div class="p-5 rounded-xl glass-card flex flex-col justify-between space-y-4 hover:border-brand-orange/20 transition-all">
+            <div class="flex items-center gap-3">
+              <div class="h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-inner ${p.avatar}">
+                ${p.name.split(' ').map(n=>n[0]).join('')}
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-white truncate">${p.name}</p>
+                <p class="text-[9px] text-slate-500 font-semibold uppercase tracking-wider truncate">${p.title}</p>
+              </div>
+            </div>
+            
+            <div class="flex-1 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400 font-medium">Appeal Score</span>
+                <span class="font-black ${colorClass}">${item.score}/100</span>
+              </div>
+              <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-brand-orange to-brand-purple" style="width: ${item.score}%"></div>
+              </div>
+              
+              <!-- Quote Feedback -->
+              <p class="text-[11px] text-slate-300 leading-relaxed italic bg-slate-900/60 p-2.5 rounded-lg border border-brand-border/40">
+                "${item.feedback}"
+              </p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Update reports metadata summaries
+    function updateReportMeta() {
+      document.getElementById('report-meta-role').innerText = state.role || 'Custom Pasted Role';
+      document.getElementById('report-meta-level').innerText = state.level;
+      document.getElementById('report-meta-domain').innerText = state.domain;
+      document.getElementById('report-meta-orig').innerText = `${state.originalScore}/100`;
+      document.getElementById('report-meta-fixed').innerText = `${state.fixedScore}/100`;
+    }
+
+    // Call ReportLab PDF Export in Python
+    function downloadPdfReport() {
+      if (!state.originalJd) {
+        showToast('Please audit a job description first.', 'error');
+        return;
+      }
+      
+      setLoader(true, 'Compiling executive PDF report...');
+      
+      fetch(getApiUrl('/api/pdf'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metadata: {
+            role: state.role || 'Custom Pasted Role',
+            level: state.level,
+            domain: state.domain
+          },
+          original_score: state.originalScore,
+          fixed_score: state.fixedScore,
+          flagged_items: state.flaggedItems,
+          original_jd: state.originalJd,
+          fixed_jd: state.fixedJd || state.originalJd
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res.json();
+      })
+      .then(data => {
+        setLoader(false);
+        // Trigger browser file download of base64 bytes
+        const link = document.createElement('a');
+        link.href = 'data:application/pdf;base64,' + data.pdf_base64;
+        link.download = `HireEquity_Report_${(state.role || 'Audit').replace(/\s+/g, '_')}.pdf`;
+        link.click();
+        
+        showToast('PDF Audit Report downloaded successfully.', 'success');
+      })
+      .catch(err => {
+        setLoader(false);
+        showToast('PDF Compilation failed.', 'error');
+      });
+    }
+
+    // Export format placeholders
+    function downloadDocxPlaceholder() {
+      if (!state.originalJd) {
+        showToast('Please compile job description draft first.', 'error');
+        return;
+      }
+      // Trigger markdown txt download
+      const text = `
+# Job Description Audit: ${state.role || 'Custom Pasted Role'}
+* Level: ${state.level}
+* Domain: ${state.domain}
+* Inclusivity Score: ${state.fixedScore}/100
+
+## Job Description Text:
+${state.fixedJd || state.originalJd}
+      `;
+      const link = document.createElement('a');
+      link.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(text);
+      link.download = `HireEquity_${(state.role || 'Audit').replace(/\s+/g, '_')}.md`;
+      link.click();
+      showToast('Markdown documentation downloaded.', 'success');
+    }
+
+    function downloadJsonExport() {
+      if (state.flaggedItems.length === 0 && !state.originalJd) {
+        showToast('No active data to export.', 'error');
+        return;
+      }
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state, null, 2));
+      const link = document.createElement('a');
+      link.href = dataStr;
+      link.download = 'HireEquity_Audit_Payload.json';
+      link.click();
+      showToast('JSON payload downloaded.', 'success');
+    }
+
+    function shareReport() {
+      if (!state.originalJd) {
+        showToast('Please audit a job description first before sharing.', 'error');
+        return;
+      }
+      const reportId = 'HE-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+      const shareUrl = `https://hireequity.app/report/${reportId}`;
+      state._lastShareUrl = shareUrl;
+      document.getElementById('share-url-input').value = shareUrl;
+      document.getElementById('share-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function copyShareUrl() {
+      const url = document.getElementById('share-url-input').value;
+      navigator.clipboard.writeText(url)
+        .then(() => showToast('✓ Public URL copied to clipboard!', 'success'))
+        .catch(() => {
+          // Fallback for non-https
+          document.getElementById('share-url-input').select();
+          showToast('Select & copy the URL manually.', 'info');
+        });
+    }
+
+    function openShareLink() {
+      const url = document.getElementById('share-url-input').value;
+      window.open(url, '_blank');
+    }
+
+    function closeShareModal() {
+      document.getElementById('share-modal').classList.add('hidden');
+    }
+
+    // =====================================================================
+    // THEME TOGGLE — Full dark/light with localStorage persistence
+    // =====================================================================
+    let darkTheme = true;
+
+    function applyTheme(isDark) {
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+      const btnText = document.getElementById('theme-text-btn');
+
+      if (isDark) {
+        html.classList.add('dark');
+        if (icon) icon.setAttribute('data-lucide', 'moon');
+        if (btnText) btnText.innerText = 'Dark Mode';
+        document.body.style.backgroundColor = '#060913';
+      } else {
+        html.classList.remove('dark');
+        if (icon) icon.setAttribute('data-lucide', 'sun');
+        if (btnText) btnText.innerText = 'Light Mode';
+        document.body.style.backgroundColor = '#F8FAFC';
+      }
+      lucide.createIcons();
+
+      // Re-render charts with correct colours
+      if (state.activeTab === 'analytics') {
+        renderAnalyticsCharts();
+      }
+    }
+
+    function toggleDarkMode() {
+      darkTheme = !darkTheme;
+      localStorage.setItem('hireequity-theme', darkTheme ? 'dark' : 'light');
+      applyTheme(darkTheme);
+      showToast(`✓ Theme switched to ${darkTheme ? 'Dark' : 'Light'} Mode`, 'info');
+    }
+
+    function saveSettings() {
+      showToast('✓ Configuration saved successfully.', 'success');
+    }
+
+    // =====================================================================
+    // SIDEBAR MOBILE TOGGLE
+    // =====================================================================
+    function toggleSidebar() {
+      const aside = document.querySelector('aside');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      const isOpen = !aside.classList.contains('-translate-x-full');
+      if (isOpen) {
+        aside.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      } else {
+        aside.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      }
+    }
+
+    // =====================================================================
+    // TEAM MANAGEMENT — Real project team data
+    // =====================================================================
+    const TEAM_MEMBERS = [
+      {
+        name: 'Ayesha Maniyar',
+        initials: 'AM',
+        email: '01fe23bci007@kletech.ac.in',
+        role: 'owner',
+        roleLabel: 'Owner',
+        gradient: 'from-brand-orange to-brand-purple',
+        badgeCls: 'bg-brand-orange/10 border-brand-orange/30 text-brand-orange',
+        active: true
+      },
+      {
+        name: 'Gouri Banapurmath',
+        initials: 'GB',
+        email: '01fe23bci079@kletech.ac.in',
+        role: 'editor',
+        roleLabel: 'Editor',
+        gradient: 'from-purple-500 to-indigo-600',
+        badgeCls: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+        active: true
+      },
+      {
+        name: 'Michelle Hoolgeri',
+        initials: 'MH',
+        email: '01fe23bci042@kletech.ac.in',
+        role: 'editor',
+        roleLabel: 'Editor',
+        gradient: 'from-rose-500 to-pink-600',
+        badgeCls: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
+        active: true
+      },
+      {
+        name: 'Tanuja Ratan',
+        initials: 'TR',
+        email: '01fe23bci076@kletech.ac.in',
+        role: 'editor',
+        roleLabel: 'Editor',
+        gradient: 'from-emerald-500 to-teal-600',
+        badgeCls: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+        active: true
+      }
+    ];
+
+    let teamFilter = 'all';
+    let teamSearch = '';
+
+    function renderTeamGrid() {
+      const grid = document.getElementById('team-grid');
+      if (!grid) return;
+
+      const filtered = TEAM_MEMBERS.filter(m => {
+        const matchesRole = teamFilter === 'all' || m.role === teamFilter;
+        const matchesSearch = !teamSearch ||
+          m.name.toLowerCase().includes(teamSearch) ||
+          m.email.toLowerCase().includes(teamSearch);
+        return matchesRole && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-4 text-center py-12 glass-card rounded-xl">
+            <i data-lucide="search-x" class="w-8 h-8 text-slate-500 mx-auto mb-3"></i>
+            <p class="text-slate-400 text-sm font-medium">No team members found</p>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = filtered.map(m => `
+        <div class="p-5 rounded-xl glass-card glass-card-hover flex flex-col gap-4 group cursor-default" tabindex="0" aria-label="Team member ${m.name}">
+          <!-- Avatar + Badge -->
+          <div class="flex items-start justify-between">
+            <div class="h-14 w-14 rounded-2xl bg-gradient-to-br ${m.gradient} flex items-center justify-center font-extrabold text-white text-lg shadow-lg select-none">
+              ${m.initials}
+            </div>
+            <span class="text-[9px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wider ${m.badgeCls}">
+              ${m.roleLabel}
+            </span>
+          </div>
+          <!-- Info -->
+          <div class="space-y-1">
+            <p class="font-bold text-white text-sm leading-snug">${m.name}</p>
+            <p class="text-[11px] text-slate-400 font-medium truncate">${m.email}</p>
+          </div>
+          <!-- Status footer -->
+          <div class="flex items-center justify-between border-t border-brand-border pt-3 mt-auto">
+            <span class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Active
+            </span>
+            ${m.role !== 'owner' ? `
+            <button class="text-[10px] text-slate-500 hover:text-rose-400 font-semibold transition-all px-2 py-0.5 rounded hover:bg-rose-500/10" aria-label="Remove ${m.name}">
+              Remove
+            </button>` : `
+            <span class="text-[10px] text-brand-orange font-semibold">Project Lead</span>`}
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function filterTeam() {
+      teamSearch = document.getElementById('team-search').value.toLowerCase();
+      renderTeamGrid();
+    }
+
+    function filterTeamByRole(role) {
+      teamFilter = role;
+      // Update button styles
+      document.querySelectorAll('.role-filter-btn').forEach(btn => {
+        const r = btn.getAttribute('data-role-filter');
+        if (r === role) {
+          btn.className = 'role-filter-btn active px-3 py-2 rounded-lg text-xs font-bold bg-brand-orange/20 border border-brand-orange/40 text-brand-orange transition-all';
+        } else {
+          btn.className = 'role-filter-btn px-3 py-2 rounded-lg text-xs font-bold bg-slate-900 border border-brand-border text-slate-400 hover:text-white hover:border-brand-orange/40 transition-all';
+        }
+      });
+      renderTeamGrid();
+    }
+
+    // =====================================================================
+    // INVITE MODAL
+    // =====================================================================
+    function openInviteModal() {
+      document.getElementById('invite-modal').classList.remove('hidden');
+      lucide.createIcons();
+      setTimeout(() => document.getElementById('invite-email').focus(), 100);
+    }
+
+    function closeInviteModal() {
+      document.getElementById('invite-modal').classList.add('hidden');
+      document.getElementById('invite-email').value = '';
+    }
+
+    function sendInvite() {
+      const email = document.getElementById('invite-email').value.trim();
+      const role = document.getElementById('invite-role').value;
+      if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address.', 'error');
+        return;
+      }
+      closeInviteModal();
+      showToast(`✓ Invitation sent to ${email} as ${role}.`, 'success');
+    }
+
+    // =====================================================================
+    // ANALYTICS CHARTS — fixed label colours for both themes
+    // =====================================================================
+    function getChartTextColor() {
+      return darkTheme ? '#94A3B8' : '#475569';
+    }
+    function getChartGridColor() {
+      return darkTheme ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+    }
+    function getChartAngleLineColor() {
+      return darkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+    }
+
+    function renderAnalyticsCharts() {
+      const textColor = getChartTextColor();
+      const gridColor = getChartGridColor();
+      const angleColor = getChartAngleLineColor();
+
+      // 1. Radar Chart — Bias Coverage Analysis
+      const ctxRadar = document.getElementById('chart-radar');
+      if (!ctxRadar) return;
+      if (chartRadar) chartRadar.destroy();
+
+      const radarLabels = ['Gender Balance', 'Age Neutrality', 'Accessibility', 'Elitism Checks', 'Requirements Limit'];
+      let radarData = [100, 100, 100, 100, 100];
+
+      if (state.flaggedItems.length > 0) {
+        state.flaggedItems.forEach(item => {
+          const cat = item.category.toLowerCase();
+          if (cat.includes('gender')) radarData[0] -= 15;
+          else if (cat.includes('age')) radarData[1] -= 25;
+          else if (cat.includes('ableism')) radarData[2] -= 20;
+          else if (cat.includes('elitism')) radarData[3] -= 15;
+          else radarData[4] -= 10;
+        });
+      } else {
+        radarData = [65, 80, 75, 90, 70];
+      }
+      radarData = radarData.map(v => Math.max(20, Math.min(100, v)));
+
+      chartRadar = new Chart(ctxRadar.getContext('2d'), {
+        type: 'radar',
+        data: {
+          labels: radarLabels,
+          datasets: [{
+            label: 'Compliance %',
+            data: radarData,
+            backgroundColor: 'rgba(255, 122, 0, 0.15)',
+            borderColor: '#FF7A00',
+            pointBackgroundColor: '#8B5CF6',
+            pointBorderColor: '#8B5CF6',
+            borderWidth: 2,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            r: {
+              angleLines: { color: angleColor },
+              grid: { color: angleColor },
+              pointLabels: {
+                color: textColor,
+                font: { size: 11, weight: '600', family: '"Plus Jakarta Sans", sans-serif' },
+                padding: 12
+              },
+              ticks: {
+                display: false,
+                backdropColor: 'transparent'
+              },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          }
+        }
+      });
+
+      // 2. Trend Line Chart
+      const ctxTrend = document.getElementById('chart-trend');
+      if (!ctxTrend) return;
+      if (chartTrend) chartTrend.destroy();
+      chartTrend = new Chart(ctxTrend.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          datasets: [
+            {
+              label: 'Original Draft Avg',
+              data: [68, 70, 72, 69, 74, 71, state.originalScore],
+              borderColor: '#EF4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.07)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+              pointBackgroundColor: '#EF4444',
+              pointRadius: 4
+            },
+            {
+              label: 'Optimized Target Avg',
+              data: [92, 94, 95, 93, 97, 96, state.fixedScore],
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.07)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+              pointBackgroundColor: '#10B981',
+              pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: textColor, font: { size: 11 } }
+            }
+          },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } }, min: 50, max: 100 }
+          }
+        }
+      });
+
+      // 3. Department Bar Chart
+      const ctxDept = document.getElementById('chart-dept');
+      if (!ctxDept) return;
+      if (chartDept) chartDept.destroy();
+      chartDept = new Chart(ctxDept.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Engineering', 'Marketing', 'Product Mgmt', 'HR & Recruiter', 'Finance'],
+          datasets: [{
+            data: [72, 68, 85, 94, 82],
+            backgroundColor: ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'],
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, font: { size: 10, weight: '600' } }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { size: 10 } },
+              min: 50, max: 100
+            }
+          }
+        }
+      });
+    }
+
+    // =====================================================================
+    // UPDATED switchTab — add team tab support + lucide refresh
+    // =====================================================================
+    const _originalSwitchTab = switchTab;
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      const tab = document.getElementById('tab-' + tabId);
+      if (tab) tab.classList.remove('hidden');
+
+      const titleMapping = {
+        dashboard: 'Dashboard Overview',
+        studio: 'AI JD Studio',
+        audit: 'Bias Scan Audit',
+        rewrite: 'AI Optimization',
+        analytics: 'Analytics Overview',
+        simulator: 'Candidate Sentiment Simulation',
+        reports: 'Reports & Export Compilation',
+        settings: 'Console Configuration',
+        team: 'Team Management'
+      };
+      const navbar = document.getElementById('navbar-title');
+      if (navbar) navbar.innerText = titleMapping[tabId] || 'Overview';
+
+      document.querySelectorAll('.sidebar-link').forEach(el => {
+        if (el.getAttribute('data-tab') === tabId) {
+          el.className = 'sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold bg-white/10 text-white shadow-inner transition-all duration-200 group';
+        } else {
+          el.className = 'sidebar-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 group';
+        }
+      });
+
+      // Close mobile sidebar on nav
+      const aside = document.querySelector('aside');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (window.innerWidth < 768) {
+        aside.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+
+      if (tabId === 'analytics') renderAnalyticsCharts();
+      if (tabId === 'reports') updateReportMeta();
+      if (tabId === 'team') renderTeamGrid();
+
+      lucide.createIcons();
+    }
+
+    // =====================================================================
+    // INIT — restore saved theme, render team, etc.
+    // =====================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+
+      // Restore persisted theme
+      const savedTheme = localStorage.getItem('hireequity-theme') || 'dark';
+      darkTheme = savedTheme === 'dark';
+      applyTheme(darkTheme);
+
+      checkBackendConnection();
+      renderRecentAudits();
+      updateLiveStats();
+      renderTeamGrid();
+    });
+  </script>
+</body>
+</html>
+
