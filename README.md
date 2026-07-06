@@ -1,176 +1,280 @@
-# HireEquity 
-### AI-Powered Job Description Generator & Bias Auditor
+# HireEquity
+### Hybrid AI + ML Powered Job Description Generator & Bias Auditor
 
 ## 🌐 Live Demo
- **[Click Here to Open App](https://hireequity.streamlit.app/)**
+
+**[Click Here to Open App](https://hireequity.streamlit.app/)**
 
 [![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://streamlit.io)
-[![Groq](https://img.shields.io/badge/LLM-Groq%20Llama%203.1-orange?style=for-the-badge)](https://console.groq.com)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)](https://python.org)
-
-
-
----
-
-##  What is HireEquity?
-
-HireEquity is a professional, AI-powered web application that helps HR teams, recruiters, and hiring managers write **fairer, more inclusive job descriptions**. It automatically detects biased language, scores the JD out of 100, fixes it using AI, and generates a professional PDF audit report — all in seconds.
+[![Groq](https://img.shields.io/badge/AI-Groq%20Llama%203.x-orange?style=for-the-badge)](https://console.groq.com)
+[![Transformers](https://img.shields.io/badge/ML-Zero--Shot%20Transformer-blue?style=for-the-badge)](https://huggingface.co/facebook/bart-large-mnli)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)](https://python.org)
 
 ---
 
-## Problem Statement
+# What is HireEquity?
 
-Many companies unknowingly write job descriptions with biased words that discourage qualified candidates from applying and reduce workforce diversity.
+HireEquity is a Hybrid AI + Machine Learning platform that helps HR teams create, analyze and improve job descriptions.
 
-| Biased Word | Type | Impact |
-|---|---|---|
-| "rockstar", "ninja" | Gender Bias | Women feel unwelcome |
-| "He should" | Gender Assumption | Excludes non-male candidates |
-| "Young and energetic" | Age Bias | Discriminates older candidates |
-| "IIT/NIT only" | Elitism | Narrows talent pool unfairly |
-| "Physically fit" | Ableism | Excludes differently abled |
-| "10+ years experience" | Overly Restrictive | Blocks qualified candidates |
+Instead of relying only on an LLM, HireEquity combines:
 
-Research by **Gaucher et al. (2011)** proves that masculine-coded words like *rockstar, dominant, competitive* significantly lower appeal for female applicants. Manually reviewing and rephrasing these documents is time-consuming and requires specialized DEI expertise. **HireEquity automates this entire process.**
+- AI-powered Job Description Generation
+- Rule-based Bias Detection
+- ML-based Semantic Bias Detection
+- AI Job Description Rewriting
+- PDF Audit Reporting
+- Analytics Dashboard
+
+The system automatically identifies biased language, assigns an inclusivity score, rewrites biased content, and generates a professional audit report.
 
 ---
 
-## What It Does — 4 Step Workflow
+# Problem Statement
+
+Many organizations unknowingly publish job descriptions containing biased language that discourages qualified candidates and reduces workforce diversity.
+
+Examples include:
+
+| Biased Phrase | Category |
+|---------------|----------|
+| Rockstar, Ninja | Gender Bias |
+| Young & Energetic | Age Bias |
+| He should... | Gender Bias |
+| IIT/NIT Only | Elitism |
+| Physically Fit | Ableism |
+| 10+ Years Mandatory | Restrictive Hiring |
+
+HireEquity automates the complete auditing process using a Hybrid AI + ML pipeline.
+
+---
+
+# Hybrid Workflow
+
+```text
+Step 1 → User enters Role / Level / Domain
+          OR Pastes Existing Job Description
+
+↓
+
+Step 2 → Groq Llama 3.x generates Job Description
+
+↓
+
+Step 3 → Hybrid Bias Detection
+
+        • Gaucher Bias Wordlist
+        • Zero-Shot Transformer
+          (facebook/bart-large-mnli)
+
+↓
+
+Step 4 → Bias Score
+          Severity
+          Confidence
+          Category Analysis
+
+↓
+
+Step 5 → Groq AI rewrites biased Job Description
+
+↓
+
+Step 6 → Before vs After Comparison
+
+↓
+
+Step 7 → PDF Report + Analytics Dashboard
+```
+
+---
+
+# Features
+
+- AI Job Description Generator
+- Hybrid Bias Detection Engine
+- Zero-Shot Semantic Classification
+- Gaucher Bias Wordlist Scanner
+- Inclusivity Score (0–100)
+- Severity Classification
+- Confidence Score
+- AI Job Description Rewriter
+- Before vs After Comparison
+- Interactive Analytics Dashboard
+- PDF Audit Report
+- Candidate Persona Insights
+
+---
+
+# System Architecture
 
 ```
-Step 1 → Paste existing JD  OR  type role name to generate new JD
-Step 2 → Dual engine scan (Gaucher wordlist + Llama 3.1 semantic check)
-Step 3 → AI auto rewrites biased JD, shows before vs after comparison
-Step 4 → View insights dashboard + download PDF audit report
+User Input
+      │
+      ▼
+Groq Llama 3.x
+Job Description Generator
+      │
+      ▼
+Hybrid Bias Detection Engine
+
+ ├── Gaucher Bias Wordlist
+ └── Zero-Shot Transformer
+     (facebook/bart-large-mnli)
+
+      │
+      ▼
+Bias Scoring Engine
+
+      │
+      ▼
+Groq AI Rewrite Engine
+
+      │
+      ▼
+Analytics Dashboard
++
+PDF Report
++
+Inclusive Job Description
 ```
 
 ---
 
-## Features
-
--  **AI JD Generator** — Generate full professional JD from just a role name, level and domain
--  **Dual Engine Bias Scanner** — Gaucher wordlist matching + Llama 3.1 semantic analysis
--  **Color Heatmap** — Red = Critical, Yellow = Moderate, Blue = Minor bias words
--  **Inclusivity Score** — Bias score out of 100 shown as Plotly gauge chart
--  **One Click Auto Fix** — AI rewrites entire JD removing all bias instantly
--  **Before vs After Comparison** — Side by side view with strikethroughs on bad words
--  **Candidate Persona Predictor** — Predicts gender ratio of applicants before and after fix
--  **PDF Audit Report** — 3 page professional report with full audit details
-- **Insights Dashboard** — Charts, score delta, category breakdown analytics
-
----
-
-##  Tech Stack
+# Tech Stack
 
 | Component | Technology |
-|---|---|
+|------------|------------|
 | Frontend | Streamlit |
-| AI Model | Llama 3.1 via Groq API |
-| Bias Detection | Gaucher et al. Wordlist |
-| Charts | Plotly Express and Plotly Graph Objects |
+| AI Generation | Groq Llama 3.x |
+| AI Rewriting | Groq Llama 3.x |
+| Semantic Detection | facebook/bart-large-mnli |
+| ML Framework | Hugging Face Transformers |
+| Lexicon Detection | Gaucher Bias Wordlist |
+| NLP | NLTK |
+| Charts | Plotly |
 | PDF Export | ReportLab |
-| Styling | Custom CSS with glassmorphic dark theme |
-| Environment | Python Dotenv |
+| Backend | Python |
+| Deployment | Streamlit Community Cloud |
 
 ---
 
-##  Dataset Used
+# Hybrid Bias Detection
 
-**Gaucher et al. (2011)** — Peer reviewed academic research proving that certain words in job ads attract or repel specific demographics. No model training required. Pure word matching combined with LLM semantic understanding.
+## Rule-Based Detection
 
-Wordlist covers:
--  Masculine coded words (aggressive, dominant, rockstar, ninja)
--  Feminine coded words (collaborative, nurturing, warm, compassionate)
--  Age bias words (young, digital native, fresh graduate, below 30)
-- Elitism bias (ivy league, tier-1, only IIT, premier institute)
--  Ableism (able-bodied, physically fit, stand for long hours)
--  Overly restrictive (10+ years experience, mandatory PhD)
+Uses the Gaucher et al. (2011) bias lexicon.
 
----
+Detects:
 
-##  How to Run Locally
+- Gender Bias
+- Age Bias
+- Ableism
+- Elitism
+- Restrictive Hiring
+- Nationality Bias
 
-### Prerequisites
-- Python 3.8 or higher
-- Free Groq API Key from [console.groq.com](https://console.groq.com)
-
-### Step 1 — Clone the Repository
-```bash
-git clone https://github.com/ayeshamaniyar26/HireEquity.git
-cd HireEquity
-```
-
-### Step 2 — Set Up Virtual Environment (Recommended)
-```bash
-python -m venv .venv
-
-# On Windows
-.venv\Scripts\Activate.ps1
-
-# On macOS/Linux
-source .venv/bin/activate
-```
-
-### Step 3 — Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### Step 4 — Configure Environment Variables
-Create a `.env` file in the root folder:
-```env
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-### Step 5 — Run the App
-```bash
-streamlit run app.py
-```
-
-Open browser at `http://localhost:8501` 
+using exact and partial word matching.
 
 ---
 
-##  Project Structure
+## ML-Based Semantic Detection
+
+Model Used
+
+```
+facebook/bart-large-mnli
+```
+
+Uses Zero-Shot Classification to identify contextual bias that keyword matching cannot detect.
+
+Outputs:
+
+- Bias Category
+- Confidence Score
+- Severity Level
+
+---
+
+# Dataset / Knowledge Base
+
+HireEquity does not require supervised model training.
+
+Instead it combines:
+
+### Academic Bias Lexicon
+
+**Gaucher et al. (2011)**
+
+Includes:
+
+- Masculine-coded words
+- Feminine-coded words
+- Age Bias
+- Ableism
+- Elitism
+- Restrictive Hiring
+
+### Pre-trained Transformer
+
+```
+facebook/bart-large-mnli
+```
+
+Used for Zero-Shot semantic bias classification.
+
+---
+
+# Project Structure
 
 ```
 HireEquity/
-│
-├── app.py              → Main Streamlit app and all pages
-├── bias_detector.py    → Gaucher wordlist + Llama 3.1 semantic scanner
-├── jd_generator.py     → AI JD generation via Groq API
-├── rewriter.py         → AI auto rewriter for biased JD
-├── pdf_export.py       → PDF audit report generator
-├── wordlists.py        → Full Gaucher bias wordlist dictionary
-│
-├── screenshots/        → App screenshots
-│   ├── page1.png
-│   ├── page2.png
-│   ├── page3.png
-│   └── page4.png
-│
-├── requirements.txt    → Python dependencies
-├── .env.example        → API key template
-├── .gitignore          → Excludes .env and cache files
-└── README.md           → Documentation
+
+app.py
+bias_detector.py
+jd_generator.py
+rewriter.py
+pdf_export.py
+wordlists.py
+
+architecture.png
+pipeline.png
+
+screenshots/
+
+requirements.txt
+README.md
+.env.example
+.gitignore
 ```
 
 ---
 
-##  Screenshots
+# How to Run
 
-| Page 1: JD Input | Page 2: Bias Audit |
-|---|---|
-| ![Page 1](screenshots/page1.png) | ![Page 2](screenshots/page2.png) |
+```bash
+git clone https://github.com/MICHELLE-HOOLGERI25/HIRE-EQUITY.git
 
-| Page 3: Auto Fix & Compare | Page 4: Insights Dashboard |
-|---|---|
-| ![Page 3](screenshots/page3.png) | ![Page 4](screenshots/page4.png) |
+cd HIRE-EQUITY
+
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+
+---
+
+# Screenshots
+
+Add screenshots of:
+
+- Dashboard
+- AI JD Studio
+- Bias Audit
+- AI Rewrite
+- Analytics
 
 ---
 
-##  Built For
+# Built For
 
-**PS-HR3** — AI Powered Job Description Generator and Bias Auditor Hackathon Challenge
-
----
+**PS-HR3 – AI Powered Job Description Generator & Bias Auditor Hackathon**
